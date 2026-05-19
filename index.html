@@ -11,6 +11,9 @@
 <title>FlotaRD — Gestión de Flotilla</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root {
     --primary:#185FA5;--primary-dark:#0C447C;--primary-light:#E6F1FB;
@@ -30,7 +33,7 @@
 
   /* LOGIN */
   .login-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);padding:20px;}
-  .login-card{background:var(--card);border:0.5px solid var(--border);border-radius:20px;padding:32px 28px;width:100%;max-width:380px;}
+  .login-card{background:var(--card);border:0.5px solid var(--border);border-radius:20px;padding:32px 28px;width:100%;max-width:420px;}
   .login-logo{text-align:center;margin-bottom:28px;}
   .login-logo-icon{width:64px;height:64px;background:var(--primary);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
   .login-logo-icon i{color:#fff;font-size:34px;}
@@ -188,12 +191,38 @@
       <div class="login-logo-title">FlotaRD</div>
       <div class="login-logo-sub">Gestión de flotilla vehicular</div>
     </div>
+    <!-- Tabs -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border:0.5px solid var(--border-strong);border-radius:10px;overflow:hidden">
+      <button id="tab-login" onclick="switchTab('login')" style="flex:1;padding:9px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:var(--primary);color:#fff;font-family:inherit">Iniciar sesión</button>
+      <button id="tab-register" onclick="switchTab('register')" style="flex:1;padding:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:var(--card);color:var(--text-muted);font-family:inherit">Registrarse</button>
+    </div>
     <div class="login-error" id="login-error"></div>
-    <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="login-email" placeholder="correo@empresa.com"></div>
-    <div class="form-group"><label class="form-label">Contraseña</label><input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="doLogin()" id="login-btn"><i class="ti ti-login"></i> Iniciar sesión</button>
-    <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--text-muted)">
-      ¿Olvidaste tu contraseña? <span style="color:var(--primary);cursor:pointer;font-weight:600" onclick="doResetPassword()">Recuperar</span>
+
+    <!-- LOGIN FORM -->
+    <div id="form-login">
+      <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="login-email" placeholder="correo@empresa.com"></div>
+      <div class="form-group"><label class="form-label">Contraseña</label><input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="doLogin()" id="login-btn"><i class="ti ti-login"></i> Iniciar sesión</button>
+      <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--text-muted)">
+        ¿Olvidaste tu contraseña? <span style="color:var(--primary);cursor:pointer;font-weight:600" onclick="doResetPassword()">Recuperar</span>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="form-register" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombre</label><input type="text" id="reg-nombre" placeholder="Juan"></div>
+        <div class="form-group"><label class="form-label">Apellido</label><input type="text" id="reg-apellido" placeholder="Pérez"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Fecha de nacimiento</label><input type="date" id="reg-dob"></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input type="tel" id="reg-tel" placeholder="809-000-0000"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Correo electrónico</label><input type="email" id="reg-email" placeholder="correo@empresa.com"></div>
+      <div class="form-group"><label class="form-label">Contraseña</label><input type="password" id="reg-password" placeholder="Mínimo 6 caracteres"></div>
+      <div class="form-group"><label class="form-label">Confirmar contraseña</label><input type="password" id="reg-password2" placeholder="Repite la contraseña"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="doRegister()" id="register-btn"><i class="ti ti-user-plus"></i> Crear cuenta</button>
+      <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--text-muted)">Tu cuenta quedará pendiente de aprobación por un administrador.</div>
     </div>
   </div>
 </div>
@@ -254,7 +283,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey:"AIzaSyBJriqaE-Mi0Due2CB4MIWIZmyPsMMo-SU",
@@ -275,6 +304,26 @@ let currentUser = null;
 let currentRole = null;
 let loaded = { v:false, m:false, c:false, u:false, co:false };
 let unsubscribers = [];
+let chartInstances = {};
+
+// Filtros de fecha
+const today = new Date();
+const startOfWeek = new Date(today);
+startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay()===0?-6:1));
+let filterMant = { desde: startOfWeek.toISOString().split('T')[0], hasta: today.toISOString().split('T')[0] };
+let filterComb = { desde: startOfWeek.toISOString().split('T')[0], hasta: today.toISOString().split('T')[0] };
+
+// ======= TAB SWITCHER =======
+window.switchTab = function(tab) {
+  const isLogin = tab==='login';
+  document.getElementById('form-login').style.display = isLogin?'':'none';
+  document.getElementById('form-register').style.display = isLogin?'none':'';
+  document.getElementById('tab-login').style.background = isLogin?'var(--primary)':'var(--card)';
+  document.getElementById('tab-login').style.color = isLogin?'#fff':'var(--text-muted)';
+  document.getElementById('tab-register').style.background = isLogin?'var(--card)':'var(--primary)';
+  document.getElementById('tab-register').style.color = isLogin?'var(--text-muted)':'#fff';
+  document.getElementById('login-error').style.display='none';
+};
 
 // ======= AUTH =======
 window.doLogin = async function() {
@@ -303,6 +352,35 @@ window.doResetPassword = async function() {
   catch(e){alert('Error: '+e.message);}
 };
 
+window.doRegister = async function() {
+  const nombre=document.getElementById('reg-nombre').value.trim();
+  const apellido=document.getElementById('reg-apellido').value.trim();
+  const dob=document.getElementById('reg-dob').value;
+  const tel=document.getElementById('reg-tel').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-password').value;
+  const pass2=document.getElementById('reg-password2').value;
+  const errEl=document.getElementById('login-error');
+  errEl.style.display='none';
+  if(!nombre||!apellido||!dob||!email||!pass){errEl.textContent='Completa todos los campos requeridos.';errEl.style.display='block';return;}
+  if(pass!==pass2){errEl.textContent='Las contraseñas no coinciden.';errEl.style.display='block';return;}
+  if(pass.length<6){errEl.textContent='La contraseña debe tener al menos 6 caracteres.';errEl.style.display='block';return;}
+  const btn=document.getElementById('register-btn');
+  btn.innerHTML='<i class="ti ti-loader" style="animation:spin 0.7s linear infinite"></i> Creando cuenta...';btn.disabled=true;
+  try {
+    const cred = await createUserWithEmailAndPassword(auth,email,pass);
+    await setDoc(doc(db,'usuarios',cred.user.uid),{
+      email,nombre,apellido,telefono:tel,fechaNacimiento:dob,
+      role:'digitador',estado:'activo',createdAt:serverTimestamp()
+    });
+    showToast('¡Cuenta creada! Bienvenido.');
+  } catch(e){
+    const msgs={'auth/email-already-in-use':'Este correo ya está registrado.','auth/invalid-email':'Correo no válido.','auth/weak-password':'Contraseña muy débil.'};
+    errEl.textContent=msgs[e.code]||'Error al crear cuenta.';errEl.style.display='block';
+    btn.innerHTML='<i class="ti ti-user-plus"></i> Crear cuenta';btn.disabled=false;
+  }
+};
+
 onAuthStateChanged(auth, async(user)=>{
   if(user){
     currentUser=user;
@@ -324,9 +402,11 @@ onAuthStateChanged(auth, async(user)=>{
 function showApp(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app-screen').style.display='flex';
+  const udata = state.usuarios.find(u=>u.id===currentUser.uid);
+  const displayName = udata&&udata.nombre ? `${udata.nombre} ${udata.apellido||''}` : currentUser.email;
   const uname=document.getElementById('sidebar-username');
   const urole=document.getElementById('sidebar-role-badge');
-  if(uname)uname.textContent=currentUser.email;
+  if(uname)uname.textContent=displayName;
   if(urole)urole.innerHTML=`<span class="badge ${currentRole==='admin'?'badge-blue':'badge-green'}">${currentRole==='admin'?'Administrador':'Digitador'}</span>`;
   const navU=document.getElementById('nav-usuarios');
   if(navU)navU.style.display=currentRole==='admin'?'flex':'none';
@@ -455,8 +535,52 @@ function renderDashboard(){
   const tC=state.combustible.reduce((s,c)=>s+(c.galones*c.precio),0);
   const tM=state.mantenimientos.reduce((s,m)=>s+m.costo,0);
   const alerts=getAlerts();
-  const rm=state.mantenimientos.slice(0,5);
-  const rc=state.combustible.slice(0,5);
+  const rm=state.mantenimientos.slice(0,4);
+
+  // Chart data — gasto por vehículo
+  const gv=state.vehiculos.map(v=>({
+    label:v.nombre.split(' ').slice(-1)[0]+' '+v.placa,
+    comb:state.combustible.filter(c=>c.vehiculoId===v.id).reduce((s,c)=>s+(c.galones*c.precio),0),
+    mant:state.mantenimientos.filter(m=>m.vehiculoId===v.id).reduce((s,m)=>s+m.costo,0),
+  })).sort((a,b)=>(b.comb+b.mant)-(a.comb+a.mant)).slice(0,6);
+
+  // Last 6 months combustible trend
+  const months=[];const monthLabels=[];
+  for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);monthLabels.push(d.toLocaleString('es-DO',{month:'short'}));}
+  const combByMonth=months.map(m=>state.combustible.filter(c=>c.fecha&&c.fecha.startsWith(m)).reduce((s,c)=>s+(c.galones*c.precio),0));
+  const mantByMonth=months.map(m=>state.mantenimientos.filter(x=>x.fecha&&x.fecha.startsWith(m)).reduce((s,x)=>s+x.costo,0));
+
+  setTimeout(()=>{
+    // Destroy old charts
+    Object.values(chartInstances).forEach(c=>{try{c.destroy();}catch(e){}});
+    chartInstances={};
+
+    const isDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+    const gridColor=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
+    const textColor=isDark?'#9c9a92':'#6b6b67';
+
+    // Bar chart — gasto por vehículo
+    const bc=document.getElementById('chart-vehiculos');
+    if(bc&&gv.length){
+      chartInstances.vehiculos=new Chart(bc,{type:'bar',data:{labels:gv.map(x=>x.label),datasets:[{label:'Combustible',data:gv.map(x=>x.comb),backgroundColor:'#185FA5',borderRadius:6},{label:'Mantenimiento',data:gv.map(x=>x.mant),backgroundColor:'#854F0B',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}},y:{stacked:true,ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
+    }
+
+    // Line chart — tendencia mensual
+    const lc=document.getElementById('chart-trend');
+    if(lc){
+      chartInstances.trend=new Chart(lc,{type:'line',data:{labels:monthLabels,datasets:[{label:'Combustible',data:combByMonth,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',tension:0.4,fill:true,pointRadius:4},{label:'Mantenimiento',data:mantByMonth,borderColor:'#854F0B',backgroundColor:'rgba(133,79,11,0.08)',tension:0.4,fill:true,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{ticks:{color:textColor,font:{size:11}},grid:{color:gridColor}},y:{ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
+    }
+
+    // Doughnut — distribución de tipos de mantenimiento
+    const dc=document.getElementById('chart-tipos');
+    if(dc){
+      const tipos={};state.mantenimientos.forEach(m=>{tipos[m.tipo]=(tipos[m.tipo]||0)+1;});
+      const tkeys=Object.keys(tipos).slice(0,6);
+      const colors=['#185FA5','#3B6D11','#854F0B','#A32D2D','#533C2C','#993556'];
+      if(tkeys.length){chartInstances.tipos=new Chart(dc,{type:'doughnut',data:{labels:tkeys,datasets:[{data:tkeys.map(k=>tipos[k]),backgroundColor:colors,borderWidth:2,borderColor:isDark?'#252523':'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:textColor,font:{size:11},boxWidth:12}}}}});}
+    }
+  },100);
+
   return `
   <div class="page-header"><div class="page-title">Dashboard</div><div class="page-sub">Bienvenido · <span class="badge ${isAdmin()?'badge-blue':'badge-green'}">${isAdmin()?'Administrador':'Digitador'}</span></div></div>
   <div class="metrics">
@@ -467,25 +591,32 @@ function renderDashboard(){
   </div>
   ${alerts.length?`<div class="card">
     <div class="card-header"><div class="card-title"><i class="ti ti-bell" style="color:var(--red)"></i> Alertas pendientes</div><button class="btn btn-sm" onclick="showPage('alertas')">Ver todas</button></div>
-    ${alerts.slice(0,3).map(a=>`<div class="alert-item" style="margin-bottom:8px">
+    ${alerts.slice(0,2).map(a=>`<div class="alert-item" style="margin-bottom:8px">
       <div class="alert-icon ${a.nivel==='rojo'?'red':'amber'}"><i class="ti ti-${a.nivel==='rojo'?'alert-circle':'alert-triangle'}" style="color:var(--${a.nivel==='rojo'?'red':'amber'})"></i></div>
       <div style="flex:1"><div style="font-weight:600;font-size:14px">${a.vehiculo}</div><div style="font-size:12px;color:var(--text-muted)">${a.msg}</div></div>
       <span class="badge badge-${a.nivel==='rojo'?'red':'amber'}">${a.nivel==='rojo'?'Crítico':'Atención'}</span>
     </div>`).join('')}
   </div>`:''}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="card" style="grid-column:1/-1">
+      <div class="card-title" style="margin-bottom:12px">Gasto por vehículo</div>
+      <div style="height:200px"><canvas id="chart-vehiculos"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Tendencia mensual</div>
+      <div style="height:180px"><canvas id="chart-trend"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Tipos de mantenimiento</div>
+      <div style="height:180px"><canvas id="chart-tipos"></canvas></div>
+    </div>
+  </div>
   <div class="card">
     <div class="card-header"><div class="card-title">Últimos mantenimientos</div><button class="btn btn-sm" onclick="showPage('mantenimientos')">Ver todos</button></div>
     ${rm.length?`<div class="table-wrap"><table>
       <tr><th>Vehículo</th><th>Tipo</th><th>Fecha</th><th>Costo</th></tr>
       ${rm.map(m=>{const v=getV(m.vehiculoId);return`<tr><td><b>${v?v.nombre:'-'}</b><br><span style="font-size:11px;color:var(--text-muted)">${v?v.placa:''}</span></td><td>${m.tipo}</td><td style="color:var(--text-muted)">${dAgo(m.fecha)}</td><td><b>${fmtM(m.costo)}</b></td></tr>`;}).join('')}
     </table></div>`:'<div class="empty"><i class="ti ti-tool"></i>Sin registros aún</div>'}
-  </div>
-  <div class="card">
-    <div class="card-header"><div class="card-title">Últimas cargas de combustible</div><button class="btn btn-sm" onclick="showPage('combustible')">Ver todas</button></div>
-    ${rc.length?`<div class="table-wrap"><table>
-      <tr><th>Vehículo</th><th>Galones</th><th>Total</th><th>Fecha</th></tr>
-      ${rc.map(c=>{const v=getV(c.vehiculoId);return`<tr><td><b>${v?v.nombre:'-'}</b><br><span style="font-size:11px;color:var(--text-muted)">${v?v.placa:''}</span></td><td>${c.galones} gal</td><td><b>${fmtM(c.galones*c.precio)}</b></td><td style="color:var(--text-muted)">${dAgo(c.fecha)}</td></tr>`;}).join('')}
-    </table></div>`:'<div class="empty"><i class="ti ti-gas-station"></i>Sin cargas aún</div>'}
   </div>`;
 }
 
@@ -564,20 +695,37 @@ function renderVehiculos(){
 
 // ======= MANTENIMIENTOS =======
 function renderMantenimientos(){
+  const filtered=state.mantenimientos.filter(m=>m.fecha>=filterMant.desde&&m.fecha<=filterMant.hasta);
+  const totalFiltrado=filtered.reduce((s,m)=>s+m.costo,0);
   return `
   <div class="page-header">
     <div class="page-header-row">
-      <div><div class="page-title">Mantenimientos</div><div class="page-sub">${state.mantenimientos.length} registros</div></div>
+      <div><div class="page-title">Mantenimientos</div><div class="page-sub">${filtered.length} registros · ${fmtM(totalFiltrado)}</div></div>
       <div class="page-actions">
+        <button class="btn btn-sm" onclick="exportPDF('mantenimientos')"><i class="ti ti-file-type-pdf"></i> PDF</button>
         <button class="btn btn-sm" onclick="exportToExcel('mantenimientos')"><i class="ti ti-file-spreadsheet"></i> Excel</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('mantenimiento')"><i class="ti ti-plus"></i> Registrar</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="padding:14px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <i class="ti ti-calendar-search" style="color:var(--primary);font-size:18px"></i>
+      <span style="font-size:13px;font-weight:600">Filtrar por fecha:</span>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <input type="date" id="mant-desde" value="${filterMant.desde}" style="width:145px;padding:7px 10px;font-size:13px" onchange="applyFilterMant()">
+        <span style="color:var(--text-muted);font-size:13px">hasta</span>
+        <input type="date" id="mant-hasta" value="${filterMant.hasta}" style="width:145px;padding:7px 10px;font-size:13px" onchange="applyFilterMant()">
+        <button class="btn btn-sm" onclick="setRangeMant('week')">Esta semana</button>
+        <button class="btn btn-sm" onclick="setRangeMant('month')">Este mes</button>
+        <button class="btn btn-sm" onclick="setRangeMant('all')">Todo</button>
       </div>
     </div>
   </div>
   <div class="card" style="padding:0">
     <div class="table-wrap"><table>
       <tr><th>Vehículo</th><th>Conductor</th><th>Tipo</th><th>Fecha</th><th>Km</th><th>Próx. km</th><th>Costo</th><th>Taller</th>${isAdmin()?'<th></th>':''}</tr>
-      ${state.mantenimientos.length?state.mantenimientos.map(m=>{
+      ${filtered.length?filtered.map(m=>{
         const v=getV(m.vehiculoId);const ov=v&&m.proximoKm&&v.odometro>=m.proximoKm;
         return`<tr>
           <td><b>${v?v.nombre:'-'}</b><br><span style="font-size:11px;color:var(--text-muted)">${v?v.placa:''}</span></td>
@@ -590,35 +738,51 @@ function renderMantenimientos(){
           <td style="color:var(--text-muted)">${m.taller||'—'}</td>
           ${isAdmin()?`<td><button class="btn btn-sm btn-danger" onclick="doDeleteM('${m.id}')"><i class="ti ti-trash"></i></button></td>`:''}
         </tr>`;
-      }).join(''):'<tr><td colspan="9"><div class="empty"><i class="ti ti-tool"></i>Sin registros.</div></td></tr>'}
+      }).join(''):`<tr><td colspan="9"><div class="empty"><i class="ti ti-tool"></i>Sin registros en este período.</div></td></tr>`}
     </table></div>
   </div>`;
 }
 
 // ======= COMBUSTIBLE =======
 function renderCombustible(){
-  const tG=state.combustible.reduce((x,c)=>x+c.galones,0);
-  const tT=state.combustible.reduce((x,c)=>x+(c.galones*c.precio),0);
+  const filtered=state.combustible.filter(c=>c.fecha>=filterComb.desde&&c.fecha<=filterComb.hasta);
+  const tG=filtered.reduce((x,c)=>x+c.galones,0);
+  const tT=filtered.reduce((x,c)=>x+(c.galones*c.precio),0);
   return `
   <div class="page-header">
     <div class="page-header-row">
-      <div><div class="page-title">Combustible</div><div class="page-sub">${state.combustible.length} cargas</div></div>
+      <div><div class="page-title">Combustible</div><div class="page-sub">${filtered.length} cargas · ${fmt(tG)} gal</div></div>
       <div class="page-actions">
+        <button class="btn btn-sm" onclick="exportPDF('combustible')"><i class="ti ti-file-type-pdf"></i> PDF</button>
         <button class="btn btn-sm" onclick="exportToExcel('combustible')"><i class="ti ti-file-spreadsheet"></i> Excel</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('combustible')"><i class="ti ti-plus"></i> Registrar</button>
       </div>
     </div>
   </div>
+  <div class="card" style="padding:14px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <i class="ti ti-calendar-search" style="color:var(--primary);font-size:18px"></i>
+      <span style="font-size:13px;font-weight:600">Filtrar por fecha:</span>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <input type="date" id="comb-desde" value="${filterComb.desde}" style="width:145px;padding:7px 10px;font-size:13px" onchange="applyFilterComb()">
+        <span style="color:var(--text-muted);font-size:13px">hasta</span>
+        <input type="date" id="comb-hasta" value="${filterComb.hasta}" style="width:145px;padding:7px 10px;font-size:13px" onchange="applyFilterComb()">
+        <button class="btn btn-sm" onclick="setRangeComb('week')">Esta semana</button>
+        <button class="btn btn-sm" onclick="setRangeComb('month')">Este mes</button>
+        <button class="btn btn-sm" onclick="setRangeComb('all')">Todo</button>
+      </div>
+    </div>
+  </div>
   <div class="metrics">
-    <div class="metric"><div class="metric-label">Total galones</div><div class="metric-value c-blue">${fmt(tG)}</div><div class="metric-sub">galones</div></div>
+    <div class="metric"><div class="metric-label">Total galones</div><div class="metric-value c-blue">${fmt(tG)}</div><div class="metric-sub">en período</div></div>
     <div class="metric"><div class="metric-label">Gasto total</div><div class="metric-value c-green" style="font-size:13px">${fmtM(tT)}</div><div class="metric-sub">combustible</div></div>
-    <div class="metric"><div class="metric-label">Prom./carga</div><div class="metric-value c-amber">${state.combustible.length?+(tG/state.combustible.length).toFixed(1):0}</div><div class="metric-sub">galones</div></div>
-    <div class="metric"><div class="metric-label">Cargas</div><div class="metric-value">${state.combustible.length}</div><div class="metric-sub">registradas</div></div>
+    <div class="metric"><div class="metric-label">Prom./carga</div><div class="metric-value c-amber">${filtered.length?+(tG/filtered.length).toFixed(1):0}</div><div class="metric-sub">galones</div></div>
+    <div class="metric"><div class="metric-label">Cargas</div><div class="metric-value">${filtered.length}</div><div class="metric-sub">en período</div></div>
   </div>
   <div class="card" style="padding:0">
     <div class="table-wrap"><table>
       <tr><th>Vehículo</th><th>Conductor</th><th>Fecha</th><th>Galones</th><th>RD$/Gal</th><th>Total</th><th>Km</th><th>Estación</th>${isAdmin()?'<th></th>':''}</tr>
-      ${state.combustible.length?state.combustible.map(c=>{
+      ${filtered.length?filtered.map(c=>{
         const v=getV(c.vehiculoId);
         return`<tr>
           <td><b>${v?v.nombre:'-'}</b><br><span style="font-size:11px;color:var(--text-muted)">${v?v.placa:''}</span></td>
@@ -630,7 +794,7 @@ function renderCombustible(){
           <td style="color:var(--text-muted)">${c.estacion||'—'}</td>
           ${isAdmin()?`<td><button class="btn btn-sm btn-danger" onclick="doDeleteC('${c.id}')"><i class="ti ti-trash"></i></button></td>`:''}
         </tr>`;
-      }).join(''):'<tr><td colspan="9"><div class="empty"><i class="ti ti-gas-station"></i>Sin cargas.</div></td></tr>'}
+      }).join(''):`<tr><td colspan="9"><div class="empty"><i class="ti ti-gas-station"></i>Sin cargas en este período.</div></td></tr>`}
     </table></div>
   </div>`;
 }
@@ -671,7 +835,11 @@ function renderReportes(){
   <div class="page-header">
     <div class="page-header-row">
       <div><div class="page-title">Reportes</div><div class="page-sub">Análisis de gastos</div></div>
-      <button class="btn btn-sm btn-green" onclick="exportToExcel('all')"><i class="ti ti-file-spreadsheet"></i> Exportar todo</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="exportPDF('mantenimientos')"><i class="ti ti-file-type-pdf"></i> PDF Mantenimientos</button>
+        <button class="btn btn-sm" onclick="exportPDF('combustible')"><i class="ti ti-file-type-pdf"></i> PDF Combustible</button>
+        <button class="btn btn-sm btn-green" onclick="exportToExcel('all')"><i class="ti ti-file-spreadsheet"></i> Exportar todo</button>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -859,6 +1027,50 @@ window.openModal=function(type,id='',preselectedVid=''){
 };
 
 window.closeModal=()=>{document.getElementById('modal-container').innerHTML='';};
+
+// ======= DATE FILTERS =======
+function getWeekRange(){const t=new Date();const s=new Date(t);s.setDate(t.getDate()-t.getDay()+(t.getDay()===0?-6:1));return{desde:s.toISOString().split('T')[0],hasta:t.toISOString().split('T')[0]};}
+function getMonthRange(){const t=new Date();return{desde:`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-01`,hasta:t.toISOString().split('T')[0]};}
+
+window.applyFilterMant=function(){filterMant={desde:document.getElementById('mant-desde').value,hasta:document.getElementById('mant-hasta').value};renderPage();};
+window.applyFilterComb=function(){filterComb={desde:document.getElementById('comb-desde').value,hasta:document.getElementById('comb-hasta').value};renderPage();};
+window.setRangeMant=function(r){filterMant=r==='week'?getWeekRange():r==='month'?getMonthRange():{desde:'2000-01-01',hasta:'2099-12-31'};renderPage();};
+window.setRangeComb=function(r){filterComb=r==='week'?getWeekRange():r==='month'?getMonthRange():{desde:'2000-01-01',hasta:'2099-12-31'};renderPage();};
+
+// ======= PDF EXPORT =======
+window.exportPDF=function(type){
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const fecha=new Date().toLocaleDateString('es-DO');
+  pdf.setFont('helvetica','bold');
+  pdf.setFontSize(16);pdf.setTextColor(24,95,165);
+  pdf.text('FlotaRD — Gestión de Flotilla',14,15);
+  pdf.setFontSize(10);pdf.setTextColor(100);
+  pdf.text(`Reporte: ${type==='mantenimientos'?'Mantenimientos':'Combustible'} · Generado: ${fecha}`,14,22);
+  pdf.line(14,25,283,25);
+
+  if(type==='mantenimientos'){
+    const filtered=state.mantenimientos.filter(m=>m.fecha>=filterMant.desde&&m.fecha<=filterMant.hasta);
+    const total=filtered.reduce((s,m)=>s+m.costo,0);
+    pdf.setFontSize(9);pdf.setTextColor(100);
+    pdf.text(`Período: ${filterMant.desde} — ${filterMant.hasta} · Registros: ${filtered.length} · Total: RD$${Math.round(total).toLocaleString('es-DO')}`,14,30);
+    pdf.autoTable({startY:34,head:[['Vehículo','Placa','Conductor','Tipo','Fecha','Km','Próx. km','Costo RD$','Taller']],
+      body:filtered.map(m=>{const v=getV(m.vehiculoId);return[v?v.nombre:'—',v?v.placa:'—',v&&v.conductorId?conductorNombre(v.conductorId):'—',m.tipo,m.fecha,fmt(m.odometro),m.proximoKm?fmt(m.proximoKm):'—',fmtM(m.costo),m.taller||'—'];}),
+      styles:{fontSize:8,cellPadding:3},headStyles:{fillColor:[24,95,165],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[240,244,251]},
+    });
+  } else {
+    const filtered=state.combustible.filter(c=>c.fecha>=filterComb.desde&&c.fecha<=filterComb.hasta);
+    const tG=filtered.reduce((s,c)=>s+c.galones,0);const tT=filtered.reduce((s,c)=>s+(c.galones*c.precio),0);
+    pdf.setFontSize(9);pdf.setTextColor(100);
+    pdf.text(`Período: ${filterComb.desde} — ${filterComb.hasta} · Cargas: ${filtered.length} · Total galones: ${fmt(tG)} · Gasto: RD$${Math.round(tT).toLocaleString('es-DO')}`,14,30);
+    pdf.autoTable({startY:34,head:[['Vehículo','Placa','Conductor','Fecha','Galones','RD$/Gal','Total RD$','Km','Estación']],
+      body:filtered.map(c=>{const v=getV(c.vehiculoId);return[v?v.nombre:'—',v?v.placa:'—',v&&v.conductorId?conductorNombre(v.conductorId):'—',c.fecha,c.galones,'RD$'+c.precio,fmtM(c.galones*c.precio),fmt(c.odometro),c.estacion||'—'];}),
+      styles:{fontSize:8,cellPadding:3},headStyles:{fillColor:[24,95,165],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[240,244,251]},
+    });
+  }
+  pdf.save(`FlotaRD_${type}_${new Date().toISOString().split('T')[0]}.pdf`);
+  showToast('PDF generado ✓');
+};
 
 // ======= CRUD =======
 window.doSaveConductor=async function(id){
