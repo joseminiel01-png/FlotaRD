@@ -240,6 +240,7 @@
     </div>
     <div class="nav-section">Principal</div>
     <div class="nav-item active" onclick="showPage('dashboard');closeSidebar()"><i class="ti ti-dashboard"></i> Dashboard</div>
+    <div class="nav-item" onclick="showPage('resumen');closeSidebar()"><i class="ti ti-layout-list"></i> Resumen</div>
     <div class="nav-item" onclick="showPage('vehiculos');closeSidebar()"><i class="ti ti-car"></i> Vehículos</div>
     <div class="nav-item" onclick="showPage('conductores');closeSidebar()"><i class="ti ti-id-badge"></i> Conductores</div>
     <div class="nav-section">Registros</div>
@@ -248,6 +249,7 @@
     <div class="nav-section">Análisis</div>
     <div class="nav-item" onclick="showPage('alertas');closeSidebar()"><i class="ti ti-bell"></i> Alertas <span class="nav-badge" id="alert-badge" style="display:none"></span></div>
     <div class="nav-item" onclick="showPage('reportes');closeSidebar()"><i class="ti ti-chart-bar"></i> Reportes</div>
+    <div class="nav-item" onclick="showPage('desempeno');closeSidebar()"><i class="ti ti-award"></i> Desempeño</div>
     <div class="nav-item" id="nav-usuarios" onclick="showPage('usuarios');closeSidebar()"><i class="ti ti-users"></i> Usuarios</div>
     <div class="sidebar-bottom">
       <button class="btn btn-sm btn-danger" style="width:100%;justify-content:center" onclick="doLogout()"><i class="ti ti-logout"></i> Cerrar sesión</button>
@@ -269,11 +271,11 @@
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 <nav class="bottom-nav">
   <div class="bottom-nav-inner">
-    <div class="bnav-item active" id="bnav-dashboard" onclick="showPage('dashboard')"><i class="ti ti-dashboard"></i><span>Inicio</span></div>
-    <div class="bnav-item" id="bnav-vehiculos" onclick="showPage('vehiculos')"><i class="ti ti-car"></i><span>Vehículos</span></div>
-    <div class="bnav-item" id="bnav-conductores" onclick="showPage('conductores')"><i class="ti ti-id-badge"></i><span>Conductores</span></div>
+    <div class="bnav-item active" id="bnav-dashboard" onclick="showPage('dashboard')"><i class="ti ti-dashboard"></i><span>Gráficos</span></div>
+    <div class="bnav-item" id="bnav-resumen" onclick="showPage('resumen')"><i class="ti ti-layout-list"></i><span>Resumen</span></div>
     <div class="bnav-item" id="bnav-mantenimientos" onclick="showPage('mantenimientos')"><i class="ti ti-tool"></i><span>Mantenim.</span></div>
     <div class="bnav-item" id="bnav-combustible" onclick="showPage('combustible')"><i class="ti ti-gas-station"></i><span>Combustible</span></div>
+    <div class="bnav-item" id="bnav-desempeno" onclick="showPage('desempeno')"><i class="ti ti-award"></i><span>Desempeño</span></div>
   </div>
 </nav>
 <button class="fab" id="fab" onclick="fabAction()"><i class="ti ti-plus"></i></button>
@@ -496,14 +498,14 @@ function exportToExcel(type){
 window.exportToExcel=exportToExcel;
 
 // ======= NAVIGATION =======
-const pageNames={dashboard:'Dashboard',vehiculos:'Vehículos',conductores:'Conductores',mantenimientos:'Mantenimientos',combustible:'Combustible',alertas:'Alertas',reportes:'Reportes',usuarios:'Usuarios'};
+const pageNames={dashboard:'Dashboard',resumen:'Resumen',vehiculos:'Vehículos',conductores:'Conductores',mantenimientos:'Mantenimientos',combustible:'Combustible',alertas:'Alertas',reportes:'Reportes',desempeno:'Desempeño por Conductor',usuarios:'Usuarios'};
 const fabPages=['vehiculos','conductores','mantenimientos','combustible'];
 
 window.showPage=function(page){
   if(page==='usuarios'&&!isAdmin())return;
   currentPage=page;
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
-  const navMap=['dashboard','vehiculos','conductores','mantenimientos','combustible','alertas','reportes','usuarios'];
+  const navMap=['dashboard','resumen','vehiculos','conductores','mantenimientos','combustible','alertas','reportes','desempeno','usuarios'];
   document.querySelectorAll('.nav-item').forEach((el,i)=>{if(navMap[i]===page)el.classList.add('active');});
   document.querySelectorAll('.bnav-item').forEach(el=>el.classList.remove('active'));
   const bn=document.getElementById('bnav-'+page);if(bn)bn.classList.add('active');
@@ -526,35 +528,38 @@ function renderPage(){
   const alerts=getAlerts();
   const ab=document.getElementById('alert-badge');if(ab){ab.textContent=alerts.length;ab.style.display=alerts.length?'inline':'none';}
   const dot=document.getElementById('bnav-dot');if(dot)dot.style.display=alerts.length?'block':'none';
-  const pages={dashboard:renderDashboard,vehiculos:renderVehiculos,conductores:renderConductores,mantenimientos:renderMantenimientos,combustible:renderCombustible,alertas:renderAlertas,reportes:renderReportes,usuarios:renderUsuarios};
+  const pages={dashboard:renderDashboard,resumen:renderResumen,vehiculos:renderVehiculos,conductores:renderConductores,mantenimientos:renderMantenimientos,combustible:renderCombustible,alertas:renderAlertas,reportes:renderReportes,desempeno:renderDesempeno,usuarios:renderUsuarios};
   el.innerHTML=(pages[currentPage]||renderDashboard)();
 }
 
-// ======= DASHBOARD =======
+// ======= DASHBOARD (solo gráficos) =======
 function renderDashboard(){
   const tC=state.combustible.reduce((s,c)=>s+(c.galones*c.precio),0);
   const tM=state.mantenimientos.reduce((s,m)=>s+m.costo,0);
-  const alerts=getAlerts();
-  const rm=state.mantenimientos.slice(0,4);
 
-  // Chart data — gasto por vehículo
+  // Gasto por vehículo
   const gv=state.vehiculos.map(v=>({
     label:v.nombre.split(' ').slice(-1)[0]+' '+v.placa,
     comb:state.combustible.filter(c=>c.vehiculoId===v.id).reduce((s,c)=>s+(c.galones*c.precio),0),
     mant:state.mantenimientos.filter(m=>m.vehiculoId===v.id).reduce((s,m)=>s+m.costo,0),
-  })).sort((a,b)=>(b.comb+b.mant)-(a.comb+a.mant)).slice(0,6);
+  })).sort((a,b)=>(b.comb+b.mant)-(a.comb+a.mant)).slice(0,8);
 
-  // Last 6 months combustible trend
+  // Tendencia últimos 6 meses
   const months=[];const monthLabels=[];
   for(let i=5;i>=0;i--){const d=new Date();d.setMonth(d.getMonth()-i);months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);monthLabels.push(d.toLocaleString('es-DO',{month:'short'}));}
   const combByMonth=months.map(m=>state.combustible.filter(c=>c.fecha&&c.fecha.startsWith(m)).reduce((s,c)=>s+(c.galones*c.precio),0));
   const mantByMonth=months.map(m=>state.mantenimientos.filter(x=>x.fecha&&x.fecha.startsWith(m)).reduce((s,x)=>s+x.costo,0));
 
+  // Gasto por conductor
+  const gc=state.conductores.map(c=>({
+    label:`${c.nombre} ${c.apellido}`,
+    comb:state.combustible.filter(x=>x.conductorId===c.id).reduce((s,x)=>s+(x.galones*x.precio),0),
+    mant:state.mantenimientos.filter(m=>m.conductorId===c.id).reduce((s,m)=>s+m.costo,0),
+  })).sort((a,b)=>(b.comb+b.mant)-(a.comb+a.mant)).slice(0,6);
+
   setTimeout(()=>{
-    // Destroy old charts
     Object.values(chartInstances).forEach(c=>{try{c.destroy();}catch(e){}});
     chartInstances={};
-
     const isDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
     const gridColor=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
     const textColor=isDark?'#9c9a92':'#6b6b67';
@@ -562,16 +567,16 @@ function renderDashboard(){
     // Bar chart — gasto por vehículo
     const bc=document.getElementById('chart-vehiculos');
     if(bc&&gv.length){
-      chartInstances.vehiculos=new Chart(bc,{type:'bar',data:{labels:gv.map(x=>x.label),datasets:[{label:'Combustible',data:gv.map(x=>x.comb),backgroundColor:'#185FA5',borderRadius:6},{label:'Mantenimiento',data:gv.map(x=>x.mant),backgroundColor:'#854F0B',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}},y:{stacked:true,ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
+      chartInstances.vehiculos=new Chart(bc,{type:'bar',data:{labels:gv.map(x=>x.label),datasets:[{label:'Combustible',data:gv.map(x=>x.comb),backgroundColor:'#185FA5',borderRadius:5},{label:'Mantenimiento',data:gv.map(x=>x.mant),backgroundColor:'#854F0B',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}},y:{stacked:true,ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
     }
 
     // Line chart — tendencia mensual
     const lc=document.getElementById('chart-trend');
     if(lc){
-      chartInstances.trend=new Chart(lc,{type:'line',data:{labels:monthLabels,datasets:[{label:'Combustible',data:combByMonth,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.1)',tension:0.4,fill:true,pointRadius:4},{label:'Mantenimiento',data:mantByMonth,borderColor:'#854F0B',backgroundColor:'rgba(133,79,11,0.08)',tension:0.4,fill:true,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{ticks:{color:textColor,font:{size:11}},grid:{color:gridColor}},y:{ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
+      chartInstances.trend=new Chart(lc,{type:'line',data:{labels:monthLabels,datasets:[{label:'Combustible',data:combByMonth,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.12)',tension:0.4,fill:true,pointRadius:4},{label:'Mantenimiento',data:mantByMonth,borderColor:'#854F0B',backgroundColor:'rgba(133,79,11,0.08)',tension:0.4,fill:true,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{ticks:{color:textColor,font:{size:11}},grid:{color:gridColor}},y:{ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
     }
 
-    // Doughnut — distribución de tipos de mantenimiento
+    // Doughnut — tipos de mantenimiento
     const dc=document.getElementById('chart-tipos');
     if(dc){
       const tipos={};state.mantenimientos.forEach(m=>{tipos[m.tipo]=(tipos[m.tipo]||0)+1;});
@@ -579,10 +584,50 @@ function renderDashboard(){
       const colors=['#185FA5','#3B6D11','#854F0B','#A32D2D','#533C2C','#993556'];
       if(tkeys.length){chartInstances.tipos=new Chart(dc,{type:'doughnut',data:{labels:tkeys,datasets:[{data:tkeys.map(k=>tipos[k]),backgroundColor:colors,borderWidth:2,borderColor:isDark?'#252523':'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:textColor,font:{size:11},boxWidth:12}}}}});}
     }
+
+    // Bar chart — gasto por conductor
+    const cc=document.getElementById('chart-conductores');
+    if(cc&&gc.length){
+      chartInstances.conductores=new Chart(cc,{type:'bar',data:{labels:gc.map(x=>x.label),datasets:[{label:'Combustible',data:gc.map(x=>x.comb),backgroundColor:'#185FA5',borderRadius:5},{label:'Mantenimiento',data:gc.map(x=>x.mant),backgroundColor:'#3B6D11',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}},y:{stacked:true,ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
+    }
   },100);
 
   return `
-  <div class="page-header"><div class="page-title">Dashboard</div><div class="page-sub">Bienvenido · <span class="badge ${isAdmin()?'badge-blue':'badge-green'}">${isAdmin()?'Administrador':'Digitador'}</span></div></div>
+  <div class="page-header">
+    <div class="page-header-row">
+      <div><div class="page-title">Dashboard</div><div class="page-sub">Gráficos de tu flotilla</div></div>
+      <span class="badge ${isAdmin()?'badge-blue':'badge-green'}">${isAdmin()?'Administrador':'Digitador'}</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px">Gasto por vehículo</div>
+    <div style="height:220px"><canvas id="chart-vehiculos"></canvas></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Tendencia mensual (6 meses)</div>
+      <div style="height:190px"><canvas id="chart-trend"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Tipos de mantenimiento</div>
+      <div style="height:190px"><canvas id="chart-tipos"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px">Gasto por conductor</div>
+    <div style="height:200px"><canvas id="chart-conductores"></canvas></div>
+  </div>`;
+}
+
+// ======= RESUMEN =======
+function renderResumen(){
+  const tC=state.combustible.reduce((s,c)=>s+(c.galones*c.precio),0);
+  const tM=state.mantenimientos.reduce((s,m)=>s+m.costo,0);
+  const alerts=getAlerts();
+  const rm=state.mantenimientos.slice(0,5);
+  const rc=state.combustible.slice(0,5);
+  return `
+  <div class="page-header"><div class="page-title">Resumen</div><div class="page-sub">Estado general de tu flotilla</div></div>
   <div class="metrics">
     <div class="metric"><div class="metric-label">Vehículos</div><div class="metric-value c-blue">${state.vehiculos.length}</div><div class="metric-sub">en flotilla</div></div>
     <div class="metric"><div class="metric-label">Conductores</div><div class="metric-value c-green">${state.conductores.length}</div><div class="metric-sub">registrados</div></div>
@@ -591,32 +636,42 @@ function renderDashboard(){
   </div>
   ${alerts.length?`<div class="card">
     <div class="card-header"><div class="card-title"><i class="ti ti-bell" style="color:var(--red)"></i> Alertas pendientes</div><button class="btn btn-sm" onclick="showPage('alertas')">Ver todas</button></div>
-    ${alerts.slice(0,2).map(a=>`<div class="alert-item" style="margin-bottom:8px">
+    ${alerts.map(a=>`<div class="alert-item" style="margin-bottom:8px">
       <div class="alert-icon ${a.nivel==='rojo'?'red':'amber'}"><i class="ti ti-${a.nivel==='rojo'?'alert-circle':'alert-triangle'}" style="color:var(--${a.nivel==='rojo'?'red':'amber'})"></i></div>
       <div style="flex:1"><div style="font-weight:600;font-size:14px">${a.vehiculo}</div><div style="font-size:12px;color:var(--text-muted)">${a.msg}</div></div>
       <span class="badge badge-${a.nivel==='rojo'?'red':'amber'}">${a.nivel==='rojo'?'Crítico':'Atención'}</span>
     </div>`).join('')}
-  </div>`:''}
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-    <div class="card" style="grid-column:1/-1">
-      <div class="card-title" style="margin-bottom:12px">Gasto por vehículo</div>
-      <div style="height:200px"><canvas id="chart-vehiculos"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title" style="margin-bottom:12px">Tendencia mensual</div>
-      <div style="height:180px"><canvas id="chart-trend"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title" style="margin-bottom:12px">Tipos de mantenimiento</div>
-      <div style="height:180px"><canvas id="chart-tipos"></canvas></div>
-    </div>
-  </div>
+  </div>`:'<div class="card"><div class="empty" style="padding:20px"><i class="ti ti-circle-check" style="color:var(--green)"></i><span style="color:var(--green);font-weight:600">¡Todo al día! Sin alertas pendientes.</span></div></div>'}
   <div class="card">
     <div class="card-header"><div class="card-title">Últimos mantenimientos</div><button class="btn btn-sm" onclick="showPage('mantenimientos')">Ver todos</button></div>
     ${rm.length?`<div class="table-wrap"><table>
-      <tr><th>Vehículo</th><th>Tipo</th><th>Fecha</th><th>Costo</th></tr>
-      ${rm.map(m=>{const v=getV(m.vehiculoId);return`<tr><td><b>${v?v.nombre:'-'}</b><br><span style="font-size:11px;color:var(--text-muted)">${v?v.placa:''}</span></td><td>${m.tipo}</td><td style="color:var(--text-muted)">${dAgo(m.fecha)}</td><td><b>${fmtM(m.costo)}</b></td></tr>`;}).join('')}
+      <tr><th>Vehículo</th><th>Conductor</th><th>Tipo</th><th>Fecha</th><th>Costo</th></tr>
+      ${rm.map(m=>{const v=getV(m.vehiculoId);return`<tr>
+        <td><b>${v?v.nombre:'-'}</b><br><span style="font-size:11px;color:var(--text-muted)">${v?v.placa:''}</span></td>
+        <td style="color:var(--text-muted)">${m.conductorId?conductorNombre(m.conductorId):'—'}</td>
+        <td>${m.tipo}</td>
+        <td style="color:var(--text-muted)">${dAgo(m.fecha)}</td>
+        <td><b>${fmtM(m.costo)}</b></td>
+      </tr>`;}).join('')}
     </table></div>`:'<div class="empty"><i class="ti ti-tool"></i>Sin registros aún</div>'}
+  </div>
+  <div class="card">
+    <div class="card-header"><div class="card-title">Últimas cargas de combustible</div><button class="btn btn-sm" onclick="showPage('combustible')">Ver todas</button></div>
+    ${rc.length?`<div class="table-wrap"><table>
+      <tr><th>Vehículo</th><th>Conductor</th><th>Galones</th><th>Total</th><th>Fecha</th></tr>
+      ${rc.map(c=>{const v=getV(c.vehiculoId);return`<tr>
+        <td><b>${v?v.nombre:'-'}</b><br><span style="font-size:11px;color:var(--text-muted)">${v?v.placa:''}</span></td>
+        <td style="color:var(--text-muted)">${c.conductorId?conductorNombre(c.conductorId):'—'}</td>
+        <td>${c.galones} gal</td>
+        <td><b>${fmtM(c.galones*c.precio)}</b></td>
+        <td style="color:var(--text-muted)">${dAgo(c.fecha)}</td>
+      </tr>`;}).join('')}
+    </table></div>`:'<div class="empty"><i class="ti ti-gas-station"></i>Sin cargas aún</div>'}
+  </div>
+  <div class="card">
+    <div class="card-title" style="margin-bottom:12px">Totales generales</div>
+    ${[['Vehículos en flotilla',state.vehiculos.length],['Conductores',state.conductores.length],['Mantenimientos registrados',state.mantenimientos.length],['Cargas de combustible',state.combustible.length],['Total galones',fmt(state.combustible.reduce((s,c)=>s+c.galones,0))+' gal'],['Gasto total mantenimiento',fmtM(tM)],['Gasto total combustible',fmtM(tC)],['Gasto total flotilla',fmtM(tM+tC)]].map(([l,v])=>`
+    <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid var(--border);font-size:13px"><span style="color:var(--text-muted)">${l}</span><b>${v}</b></div>`).join('')}
   </div>`;
 }
 
@@ -970,10 +1025,15 @@ window.openModal=function(type,id='',preselectedVid=''){
       </div>
     </div></div>`;
   } else if(type==='mantenimiento'){
+    const firstVid = state.vehiculos[0]?.id||'';
+    const firstV = getV(preselectedVid||firstVid);
+    const preCond = firstV?.conductorId||'';
+    const cOptsMant=`<option value="">— Sin conductor —</option>`+state.conductores.map(c=>`<option value="${c.id}" ${c.id===preCond?'selected':''}>${c.nombre} ${c.apellido}</option>`).join('');
     html=`<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
       <div class="modal-handle"></div>
       <div class="modal-title">Registrar mantenimiento</div>
-      <div class="form-group"><label class="form-label">Vehículo</label><select id="fv">${vOpts}</select></div>
+      <div class="form-group"><label class="form-label">Vehículo</label><select id="fv" onchange="autoFillConductor('fv','fcond-m')">${vOpts}</select></div>
+      <div class="form-group"><label class="form-label"><i class="ti ti-id-badge"></i> Conductor al momento del registro</label><select id="fcond-m">${cOptsMant}</select></div>
       <div class="form-group"><label class="form-label">Tipo de mantenimiento</label><input id="ft" placeholder="Cambio de aceite, Frenos, etc."></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Fecha</label><input id="ff" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
@@ -991,10 +1051,15 @@ window.openModal=function(type,id='',preselectedVid=''){
       </div>
     </div></div>`;
   } else if(type==='combustible'){
+    const firstVid2 = state.vehiculos[0]?.id||'';
+    const firstV2 = getV(preselectedVid||firstVid2);
+    const preCond2 = firstV2?.conductorId||'';
+    const cOptsComb=`<option value="">— Sin conductor —</option>`+state.conductores.map(c=>`<option value="${c.id}" ${c.id===preCond2?'selected':''}>${c.nombre} ${c.apellido}</option>`).join('');
     html=`<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
       <div class="modal-handle"></div>
       <div class="modal-title">Registrar carga de combustible</div>
-      <div class="form-group"><label class="form-label">Vehículo</label><select id="fv">${vOpts}</select></div>
+      <div class="form-group"><label class="form-label">Vehículo</label><select id="fv" onchange="autoFillConductor('fv','fcond-c')">${vOpts}</select></div>
+      <div class="form-group"><label class="form-label"><i class="ti ti-id-badge"></i> Conductor al momento del registro</label><select id="fcond-c">${cOptsComb}</select></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Fecha</label><input id="ff" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
         <div class="form-group"><label class="form-label">Galones</label><input id="fgl" type="number" placeholder="15" min="0" step="0.1"></div>
@@ -1028,20 +1093,35 @@ window.openModal=function(type,id='',preselectedVid=''){
 
 window.closeModal=()=>{document.getElementById('modal-container').innerHTML='';};
 
-// ======= DATE FILTERS =======
-function getWeekRange(){const t=new Date();const s=new Date(t);s.setDate(t.getDate()-t.getDay()+(t.getDay()===0?-6:1));return{desde:s.toISOString().split('T')[0],hasta:t.toISOString().split('T')[0]};}
-function getMonthRange(){const t=new Date();return{desde:`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-01`,hasta:t.toISOString().split('T')[0]};}
-
-window.applyFilterMant=function(){filterMant={desde:document.getElementById('mant-desde').value,hasta:document.getElementById('mant-hasta').value};renderPage();};
-window.applyFilterComb=function(){filterComb={desde:document.getElementById('comb-desde').value,hasta:document.getElementById('comb-hasta').value};renderPage();};
-window.setRangeMant=function(r){filterMant=r==='week'?getWeekRange():r==='month'?getMonthRange():{desde:'2000-01-01',hasta:'2099-12-31'};renderPage();};
-window.setRangeComb=function(r){filterComb=r==='week'?getWeekRange():r==='month'?getMonthRange():{desde:'2000-01-01',hasta:'2099-12-31'};renderPage();};
-
 // ======= PDF EXPORT =======
 window.exportPDF=function(type){
   const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   const fecha=new Date().toLocaleDateString('es-DO');
+  const fileDate=new Date().toISOString().split('T')[0];
+
+  if(type==='desempeno'){
+    const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    pdf.setFont('helvetica','bold');pdf.setFontSize(16);pdf.setTextColor(24,95,165);
+    pdf.text('FlotaRD — Desempeño por Conductor',14,15);
+    pdf.setFontSize(10);pdf.setTextColor(100);
+    pdf.text(`Generado: ${fecha}`,14,22);pdf.line(14,25,283,25);
+    const rows=state.conductores.map(c=>{
+      const mantsC=state.mantenimientos.filter(m=>m.conductorId===c.id);
+      const combC=state.combustible.filter(x=>x.conductorId===c.id);
+      const vids=[...new Set([...mantsC.map(m=>m.vehiculoId),...combC.map(x=>x.vehiculoId)])];
+      const tMant=mantsC.reduce((s,m)=>s+m.costo,0);
+      const tGal=combC.reduce((s,x)=>s+x.galones,0);
+      const tComb=combC.reduce((s,x)=>s+(x.galones*x.precio),0);
+      return[`${c.nombre} ${c.apellido}`,vids.length,mantsC.length,fmtM(tMant),combC.length,fmt(tGal)+' gal',fmtM(tComb),fmtM(tMant+tComb)];
+    });
+    pdf.autoTable({startY:30,head:[['Conductor','Vehículos','Mantenimientos','Costo Mant.','Cargas','Galones','Costo Comb.','Gasto Total']],
+      body:rows,styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[24,95,165],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[240,244,251]}});
+    pdf.save(`FlotaRD_desempeno_${fileDate}.pdf`);
+    showToast('PDF generado ✓');
+    return;
+  }
+
+  const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   pdf.setFont('helvetica','bold');
   pdf.setFontSize(16);pdf.setTextColor(24,95,165);
   pdf.text('FlotaRD — Gestión de Flotilla',14,15);
@@ -1053,26 +1133,149 @@ window.exportPDF=function(type){
     const filtered=state.mantenimientos.filter(m=>m.fecha>=filterMant.desde&&m.fecha<=filterMant.hasta);
     const total=filtered.reduce((s,m)=>s+m.costo,0);
     pdf.setFontSize(9);pdf.setTextColor(100);
-    pdf.text(`Período: ${filterMant.desde} — ${filterMant.hasta} · Registros: ${filtered.length} · Total: RD$${Math.round(total).toLocaleString('es-DO')}`,14,30);
-    pdf.autoTable({startY:34,head:[['Vehículo','Placa','Conductor','Tipo','Fecha','Km','Próx. km','Costo RD$','Taller']],
-      body:filtered.map(m=>{const v=getV(m.vehiculoId);return[v?v.nombre:'—',v?v.placa:'—',v&&v.conductorId?conductorNombre(v.conductorId):'—',m.tipo,m.fecha,fmt(m.odometro),m.proximoKm?fmt(m.proximoKm):'—',fmtM(m.costo),m.taller||'—'];}),
+    pdf.text(`Período: ${filterMant.desde} — ${filterMant.hasta} · Registros: ${filtered.length} · Total: ${fmtM(total)}`,14,30);
+    pdf.autoTable({startY:34,
+      head:[['Vehículo','Placa','Conductor','Tipo','Fecha','Km','Próx. km','Costo RD$','Taller']],
+      body:filtered.map(m=>{const v=getV(m.vehiculoId);return[v?v.nombre:'—',v?v.placa:'—',m.conductorId?conductorNombre(m.conductorId):'—',m.tipo,m.fecha,fmt(m.odometro),m.proximoKm?fmt(m.proximoKm):'—',fmtM(m.costo),m.taller||'—'];}),
       styles:{fontSize:8,cellPadding:3},headStyles:{fillColor:[24,95,165],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[240,244,251]},
     });
-  } else {
+  } else if(type==='combustible'){
     const filtered=state.combustible.filter(c=>c.fecha>=filterComb.desde&&c.fecha<=filterComb.hasta);
-    const tG=filtered.reduce((s,c)=>s+c.galones,0);const tT=filtered.reduce((s,c)=>s+(c.galones*c.precio),0);
+    const tG=filtered.reduce((s,c)=>s+c.galones,0);
+    const tT=filtered.reduce((s,c)=>s+(c.galones*c.precio),0);
     pdf.setFontSize(9);pdf.setTextColor(100);
-    pdf.text(`Período: ${filterComb.desde} — ${filterComb.hasta} · Cargas: ${filtered.length} · Total galones: ${fmt(tG)} · Gasto: RD$${Math.round(tT).toLocaleString('es-DO')}`,14,30);
-    pdf.autoTable({startY:34,head:[['Vehículo','Placa','Conductor','Fecha','Galones','RD$/Gal','Total RD$','Km','Estación']],
-      body:filtered.map(c=>{const v=getV(c.vehiculoId);return[v?v.nombre:'—',v?v.placa:'—',v&&v.conductorId?conductorNombre(v.conductorId):'—',c.fecha,c.galones,'RD$'+c.precio,fmtM(c.galones*c.precio),fmt(c.odometro),c.estacion||'—'];}),
+    pdf.text(`Período: ${filterComb.desde} — ${filterComb.hasta} · Cargas: ${filtered.length} · Total: ${fmt(tG)} gal · Gasto: ${fmtM(tT)}`,14,30);
+    pdf.autoTable({startY:34,
+      head:[['Vehículo','Placa','Conductor','Fecha','Galones','RD$/Gal','Total RD$','Km','Estación']],
+      body:filtered.map(c=>{const v=getV(c.vehiculoId);return[v?v.nombre:'—',v?v.placa:'—',c.conductorId?conductorNombre(c.conductorId):'—',c.fecha,c.galones,'RD$'+c.precio,fmtM(c.galones*c.precio),fmt(c.odometro),c.estacion||'—'];}),
       styles:{fontSize:8,cellPadding:3},headStyles:{fillColor:[24,95,165],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[240,244,251]},
     });
   }
-  pdf.save(`FlotaRD_${type}_${new Date().toISOString().split('T')[0]}.pdf`);
+  pdf.save(`FlotaRD_${type}_${fileDate}.pdf`);
   showToast('PDF generado ✓');
 };
+function getWeekRange(){const t=new Date();const s=new Date(t);s.setDate(t.getDate()-t.getDay()+(t.getDay()===0?-6:1));return{desde:s.toISOString().split('T')[0],hasta:t.toISOString().split('T')[0]};}
+function getMonthRange(){const t=new Date();return{desde:`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-01`,hasta:t.toISOString().split('T')[0]};}
 
-// ======= CRUD =======
+window.applyFilterMant=function(){filterMant={desde:document.getElementById('mant-desde').value,hasta:document.getElementById('mant-hasta').value};renderPage();};
+window.applyFilterComb=function(){filterComb={desde:document.getElementById('comb-desde').value,hasta:document.getElementById('comb-hasta').value};renderPage();};
+window.setRangeMant=function(r){filterMant=r==='week'?getWeekRange():r==='month'?getMonthRange():{desde:'2000-01-01',hasta:'2099-12-31'};renderPage();};
+window.setRangeComb=function(r){filterComb=r==='week'?getWeekRange():r==='month'?getMonthRange():{desde:'2000-01-01',hasta:'2099-12-31'};renderPage();};
+
+// ======= AUTO-FILL CONDUCTOR =======
+window.autoFillConductor=function(vehiculoSelectId, conductorSelectId){
+  const vid=document.getElementById(vehiculoSelectId)?.value;
+  const v=getV(vid);
+  const sel=document.getElementById(conductorSelectId);
+  if(sel&&v?.conductorId) sel.value=v.conductorId;
+};
+
+// ======= DESEMPEÑO POR CONDUCTOR =======
+function renderDesempeno(){
+  if(!state.conductores.length) return`<div class="page-header"><div class="page-title">Desempeño por Conductor</div></div><div class="empty"><i class="ti ti-id-badge"></i>Sin conductores registrados aún.</div>`;
+
+  const stats=state.conductores.map(c=>{
+    // Registros donde este conductor aparece explícitamente en el campo conductorId
+    const mantsC=state.mantenimientos.filter(m=>m.conductorId===c.id);
+    const combC=state.combustible.filter(x=>x.conductorId===c.id);
+    // Vehículos distintos en los que aparece
+    const vidsM=[...new Set(mantsC.map(m=>m.vehiculoId))];
+    const vidsC=[...new Set(combC.map(x=>x.vehiculoId))];
+    const vidsAll=[...new Set([...vidsM,...vidsC])];
+    const totalGastoMant=mantsC.reduce((s,m)=>s+m.costo,0);
+    const totalGalones=combC.reduce((s,x)=>s+x.galones,0);
+    const totalGastoComb=combC.reduce((s,x)=>s+(x.galones*x.precio),0);
+    const totalGasto=totalGastoMant+totalGastoComb;
+    return{c,mantsC,combC,vidsAll,totalGastoMant,totalGalones,totalGastoComb,totalGasto};
+  }).sort((a,b)=>b.totalGasto-a.totalGasto);
+
+  const maxGasto=Math.max(...stats.map(s=>s.totalGasto),1);
+
+  return`
+  <div class="page-header">
+    <div class="page-header-row">
+      <div><div class="page-title">Desempeño por Conductor</div><div class="page-sub">Histórico real por conductor en cada vehículo</div></div>
+      ${isAdmin()?`<button class="btn btn-sm" onclick="exportPDF('desempeno')"><i class="ti ti-file-type-pdf"></i> PDF</button>`:''}
+    </div>
+  </div>
+  <div style="background:var(--blue-bg);border:0.5px solid var(--primary);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--primary)">
+    <i class="ti ti-info-circle"></i> <b>Nota:</b> Los datos reflejan el conductor registrado <b>en el momento</b> de cada operación, independientemente del vehículo asignado hoy.
+  </div>
+  ${stats.map(({c,mantsC,combC,vidsAll,totalGastoMant,totalGalones,totalGastoComb,totalGasto})=>`
+  <div class="card">
+    <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:16px">
+      <div class="conductor-avatar" style="width:52px;height:52px;font-size:20px;flex-shrink:0">${c.nombre[0]}${c.apellido[0]}</div>
+      <div style="flex:1">
+        <div style="font-size:17px;font-weight:700">${c.nombre} ${c.apellido}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${c.tel1||''}</div>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge badge-blue"><i class="ti ti-car" style="font-size:11px"></i> ${vidsAll.length} vehículo${vidsAll.length!==1?'s':''}</span>
+          <span class="badge badge-gray"><i class="ti ti-tool" style="font-size:11px"></i> ${mantsC.length} mantenimiento${mantsC.length!==1?'s':''}</span>
+          <span class="badge badge-gray"><i class="ti ti-gas-station" style="font-size:11px"></i> ${combC.length} carga${combC.length!==1?'s':''}</span>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:18px;font-weight:700;color:var(--primary)">${fmtM(totalGasto)}</div>
+        <div style="font-size:11px;color:var(--text-muted)">gasto total generado</div>
+      </div>
+    </div>
+
+    <!-- Barra de gasto total vs max -->
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px"><span>Gasto relativo a la flotilla</span><span>${Math.round(totalGasto/maxGasto*100)}%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(totalGasto/maxGasto*100)}%;background:var(--primary)"></div></div>
+    </div>
+
+    <!-- Métricas -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:${vidsAll.length?'16px':'0'}">
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:18px;font-weight:700;color:var(--amber)">${fmtM(totalGastoMant)}</div>
+        <div style="font-size:11px;color:var(--text-muted)">en mantenimientos</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:18px;font-weight:700;color:var(--blue)">${fmt(totalGalones)} gal</div>
+        <div style="font-size:11px;color:var(--text-muted)">galones consumidos</div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:18px;font-weight:700;color:var(--green)">${fmtM(totalGastoComb)}</div>
+        <div style="font-size:11px;color:var(--text-muted)">en combustible</div>
+      </div>
+    </div>
+
+    <!-- Detalle por vehículo -->
+    ${vidsAll.length?`
+    <div style="border-top:0.5px solid var(--border);padding-top:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Detalle por vehículo operado</div>
+      ${vidsAll.map(vid=>{
+        const veh=getV(vid);
+        const vm=mantsC.filter(m=>m.vehiculoId===vid);
+        const vc=combC.filter(x=>x.vehiculoId===vid);
+        const vGalones=vc.reduce((s,x)=>s+x.galones,0);
+        const vCostoComb=vc.reduce((s,x)=>s+(x.galones*x.precio),0);
+        const vCostoMant=vm.reduce((s,m)=>s+m.costo,0);
+        const fechas=[...vm.map(m=>m.fecha),...vc.map(x=>x.fecha)].sort();
+        const desde=fechas[0]||'—';const hasta=fechas[fechas.length-1]||'—';
+        return`<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div>
+              <div style="font-weight:700;font-size:14px">${veh?veh.nombre:'Vehículo eliminado'}</div>
+              <div style="font-size:11px;color:var(--text-muted)">${veh?veh.placa:vid} · ${desde} — ${hasta}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:700;color:var(--primary)">${fmtM(vCostoComb+vCostoMant)}</div>
+              <div style="font-size:11px;color:var(--text-muted)">total</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;font-size:12px;color:var(--text-muted)">
+            <span>🔧 ${vm.length} manto${vm.length!==1?'s':''} · ${fmtM(vCostoMant)}</span>
+            <span>⛽ ${vc.length} carga${vc.length!==1?'s':''} · ${fmt(vGalones)} gal · ${fmtM(vCostoComb)}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`:''}
+  </div>`).join('')}
+  ${stats.every(s=>s.totalGasto===0)?`<div class="empty"><i class="ti ti-chart-bar"></i>Registra mantenimientos y combustible con conductor asignado para ver el desempeño.</div>`:''}`;
+}
 window.doSaveConductor=async function(id){
   const n=document.getElementById('fcn').value.trim();
   const a=document.getElementById('fca').value.trim();
@@ -1116,7 +1319,8 @@ window.doSaveV=async function(id){
 window.doSaveM=async function(){
   const t=document.getElementById('ft').value.trim();
   if(!t){alert('El tipo es requerido');return;}
-  const data={vehiculoId:document.getElementById('fv').value,tipo:t,fecha:document.getElementById('ff').value,odometro:+document.getElementById('fo').value||0,costo:+document.getElementById('fc').value||0,proximoKm:+document.getElementById('fpk').value||0,taller:document.getElementById('fta').value.trim(),notas:document.getElementById('fno').value.trim(),createdAt:serverTimestamp(),creadoPor:currentUser.email};
+  const conductorIdReg=document.getElementById('fcond-m')?document.getElementById('fcond-m').value:'';
+  const data={vehiculoId:document.getElementById('fv').value,conductorId:conductorIdReg,tipo:t,fecha:document.getElementById('ff').value,odometro:+document.getElementById('fo').value||0,costo:+document.getElementById('fc').value||0,proximoKm:+document.getElementById('fpk').value||0,taller:document.getElementById('fta').value.trim(),notas:document.getElementById('fno').value.trim(),createdAt:serverTimestamp(),creadoPor:currentUser.email};
   setSyncing();
   try{await addDoc(collection(db,'mantenimientos'),data);showToast('Mantenimiento registrado ✓');closeModal();}
   catch(e){alert('Error: '+e.message);setSynced();}
@@ -1125,7 +1329,8 @@ window.doSaveM=async function(){
 window.doSaveC=async function(){
   const g=parseFloat(document.getElementById('fgl').value);
   if(!g){alert('Los galones son requeridos');return;}
-  const data={vehiculoId:document.getElementById('fv').value,fecha:document.getElementById('ff').value,galones:g,precio:parseFloat(document.getElementById('fpr').value)||0,odometro:+document.getElementById('fo').value||0,estacion:document.getElementById('fe').value.trim(),createdAt:serverTimestamp(),creadoPor:currentUser.email};
+  const conductorIdReg=document.getElementById('fcond-c')?document.getElementById('fcond-c').value:'';
+  const data={vehiculoId:document.getElementById('fv').value,conductorId:conductorIdReg,fecha:document.getElementById('ff').value,galones:g,precio:parseFloat(document.getElementById('fpr').value)||0,odometro:+document.getElementById('fo').value||0,estacion:document.getElementById('fe').value.trim(),createdAt:serverTimestamp(),creadoPor:currentUser.email};
   setSyncing();
   try{await addDoc(collection(db,'combustible'),data);showToast('Carga registrada ✓');closeModal();}
   catch(e){alert('Error: '+e.message);setSynced();}
