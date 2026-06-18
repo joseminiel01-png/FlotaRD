@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#185FA5">
+<meta name="theme-color" content="#0F766E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="FlotaRD">
+<meta name="apple-mobile-web-app-title" content="Cybernet">
 <link rel="manifest" href="manifest.json">
-<title>FlotaRD — Gestión de Flotilla</title>
+<title>Cybernet — Gestión de Flotilla</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -16,11 +16,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root {
-    --primary:#185FA5;--primary-dark:#0C447C;--primary-light:#E6F1FB;
+    --primary:#0F766E;--primary-dark:#115E59;--primary-light:#E7F7F4;
     --bg:#F4F3EF;--card:#FFFFFF;--border:rgba(0,0,0,0.1);--border-strong:rgba(0,0,0,0.18);
     --text:#1a1a18;--text-muted:#6b6b67;--text-hint:#9c9a92;
     --green:#3B6D11;--green-bg:#EAF3DE;--amber:#854F0B;--amber-bg:#FAEEDA;
-    --red:#A32D2D;--red-bg:#FCEBEB;--blue:#185FA5;--blue-bg:#E6F1FB;
+    --red:#A32D2D;--red-bg:#FCEBEB;--blue:#2563EB;--blue-bg:#EAF1FF;
   }
   @media(prefers-color-scheme:dark){:root{
     --bg:#1c1c1a;--card:#252523;--border:rgba(255,255,255,0.1);--border-strong:rgba(255,255,255,0.2);
@@ -36,7 +36,7 @@
   .login-card{background:var(--card);border:0.5px solid var(--border);border-radius:20px;padding:32px 28px;width:100%;max-width:420px;}
   .login-logo{text-align:center;margin-bottom:28px;}
   .login-logo-icon{width:64px;height:64px;background:var(--primary);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
-  .login-logo-icon i{color:#fff;font-size:34px;}
+  .login-logo-icon i{color:#fff;font-size:34px;}.brand-logo{background:transparent;border-radius:18px}.brand-logo img{width:64px;height:64px;display:block}.brand-mark{width:26px;height:26px;display:block;border-radius:8px}
   .login-logo-title{font-size:22px;font-weight:700;color:var(--primary);}
   .login-logo-sub{font-size:13px;color:var(--text-muted);margin-top:3px;}
   .login-error{background:var(--red-bg);color:var(--red);padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none;}
@@ -111,7 +111,7 @@
   .btn-sm{padding:6px 11px;font-size:12px;border-radius:8px;}
   .btn-danger{color:var(--red);border-color:#F7C1C1;}
   .btn-green{background:var(--green);color:#fff;border-color:var(--green);}
-  .fab{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom,0px) + 14px);right:16px;width:54px;height:54px;border-radius:50%;background:var(--primary);color:#fff;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 16px rgba(24,95,165,0.45);z-index:45;transition:transform 0.15s;}
+  .fab{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom,0px) + 14px);right:16px;width:54px;height:54px;border-radius:50%;background:var(--primary);color:#fff;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 16px rgba(15,118,110,0.35);z-index:45;transition:transform 0.15s;}
   .fab:active{transform:scale(0.92);}
   @media(max-width:680px){.fab{display:flex;}}
 
@@ -126,7 +126,7 @@
   .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;border-top:0.5px solid var(--border);padding-top:16px;}
   input,select,textarea{width:100%;padding:11px 13px;border:0.5px solid var(--border-strong);border-radius:10px;font-size:15px;font-family:inherit;background:var(--card);color:var(--text);-webkit-appearance:none;appearance:none;}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(24,95,165,0.15);}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(15,118,110,0.16);}
   textarea{resize:vertical;min-height:70px;}
 
   /* VEHICLE CARDS */
@@ -179,6 +179,8 @@
 
   .user-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border:0.5px solid var(--border);border-radius:12px;margin-bottom:8px;}
   .user-avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;flex-shrink:0;}
+  .import-hint{background:var(--blue-bg);color:var(--primary);border-radius:10px;padding:12px;font-size:12px;line-height:1.45;margin-bottom:14px}
+  .import-result{background:var(--bg);border:0.5px solid var(--border);border-radius:10px;padding:10px;font-size:12px;margin-top:12px;white-space:pre-wrap;display:none}
 </style>
 </head>
 <body>
@@ -187,8 +189,8 @@
 <div class="login-screen" id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <div class="login-logo-icon"><i class="ti ti-truck"></i></div>
-      <div class="login-logo-title">FlotaRD</div>
+      <div class="login-logo-icon brand-logo"><img src="cybernet-logo.svg" alt="Cybernet"></div>
+      <div class="login-logo-title">Cybernet</div>
       <div class="login-logo-sub">Gestión de flotilla vehicular</div>
     </div>
     <!-- Tabs -->
@@ -231,7 +233,7 @@
 <div class="app" id="app-screen" style="display:none">
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="sidebar-logo-title"><i class="ti ti-truck"></i> FlotaRD</div>
+      <div class="sidebar-logo-title"><img class="brand-mark" src="cybernet-logo.svg" alt=""> Cybernet</div>
       <div class="sidebar-logo-sub"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">Conectando...</span></div>
     </div>
     <div class="sidebar-user">
@@ -437,7 +439,7 @@ function initListeners(){
   unsubscribers=[u1,u2,u3,u4,u5];
 }
 
-function checkLoaded(){if(loaded.v&&loaded.m&&loaded.c&&loaded.u&&loaded.co){setSynced();renderPage();}}
+function checkLoaded(){if(loaded.v&&loaded.m&&loaded.c&&loaded.u&&loaded.co){setSynced();renderPage();checkMaintenanceNotifications();}}
 
 // ======= HELPERS =======
 const getV=(id)=>state.vehiculos.find(v=>v.id===id);
@@ -450,12 +452,20 @@ const isAdmin=()=>currentRole==='admin';
 
 function getAlerts(){
   const al=[];
+  const now=new Date();
+  const todayOnly=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   state.vehiculos.forEach(v=>{
     const mv=state.mantenimientos.filter(m=>m.vehiculoId===v.id);
-    if(!mv.length){al.push({nivel:'amarillo',vehiculo:v.nombre,placa:v.placa,msg:'Sin registros de mantenimiento',vid:v.id});return;}
+    if(!mv.length){al.push({nivel:'amarillo',vehiculo:v.nombre,placa:v.placa,msg:'Sin registros de mantenimiento',vid:v.id,key:`sin-${v.id}`});return;}
     const lm=mv[0];
-    if(lm.proximoKm&&v.odometro>=lm.proximoKm) al.push({nivel:'rojo',vehiculo:v.nombre,placa:v.placa,msg:`Mantenimiento vencido — ${fmt(v.odometro)} km / próx: ${fmt(lm.proximoKm)} km`,vid:v.id});
-    else if(lm.proximoKm&&(lm.proximoKm-v.odometro)<=2000) al.push({nivel:'amarillo',vehiculo:v.nombre,placa:v.placa,msg:`Próximo mantenimiento en ${fmt(lm.proximoKm-v.odometro)} km`,vid:v.id});
+    if(lm.proximoKm&&v.odometro>=lm.proximoKm) al.push({nivel:'rojo',vehiculo:v.nombre,placa:v.placa,msg:`Mantenimiento vencido por kilometraje — ${fmt(v.odometro)} km / próx: ${fmt(lm.proximoKm)} km`,vid:v.id,key:`km-red-${v.id}-${lm.id||''}`});
+    else if(lm.proximoKm&&(lm.proximoKm-v.odometro)<=2000) al.push({nivel:'amarillo',vehiculo:v.nombre,placa:v.placa,msg:`Próximo mantenimiento en ${fmt(lm.proximoKm-v.odometro)} km`,vid:v.id,key:`km-amber-${v.id}-${lm.id||''}`});
+    if(lm.fechaProxima){
+      const due=new Date(lm.fechaProxima+'T00:00:00');
+      const days=Math.ceil((due-todayOnly)/86400000);
+      if(days<0) al.push({nivel:'rojo',vehiculo:v.nombre,placa:v.placa,msg:`Mantenimiento vencido desde ${lm.fechaProxima}`,vid:v.id,key:`date-red-${v.id}-${lm.id||''}`});
+      else if(days<=15) al.push({nivel:'amarillo',vehiculo:v.nombre,placa:v.placa,msg:`Mantenimiento programado para ${lm.fechaProxima} (${days===0?'hoy':days+' días'})`,vid:v.id,key:`date-amber-${v.id}-${lm.id||''}`});
+    }
   });
   return al;
 }
@@ -471,6 +481,145 @@ const vStatus=v=>{
   return'green';
 };
 const statusLabel={green:'Al día',amber:'Próximo',red:'Vencido',gray:'Sin datos'};
+
+function normalizeKey(k){
+  return String(k||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'').trim();
+}
+function pick(row, keys){
+  const map={};Object.keys(row).forEach(k=>map[normalizeKey(k)]=row[k]);
+  for(const k of keys){const v=map[normalizeKey(k)];if(v!==undefined&&v!==null&&String(v).trim()!=='')return v;}
+  return '';
+}
+function toNumber(v){if(v===undefined||v===null||v==='')return 0;const n=parseFloat(String(v).replace(/,/g,'.').replace(/[^0-9.\-]/g,''));return Number.isFinite(n)?n:0;}
+function toDateValue(v){
+  if(!v)return '';
+  if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`:'';}
+  const raw=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw;
+  const d=new Date(raw);
+  return isNaN(d)?raw:d.toISOString().split('T')[0];
+}
+function findVehicleByRow(row){
+  const placa=String(pick(row,['Placa','Matricula','Matrícula','Plate'])).trim().toLowerCase();
+  const veh=String(pick(row,['Vehiculo','Vehículo','Nombre','Unidad'])).trim().toLowerCase();
+  return state.vehiculos.find(v=>(placa&&String(v.placa||'').toLowerCase()===placa)||(veh&&String(v.nombre||'').toLowerCase()===veh));
+}
+function findConductorByName(name){
+  const n=String(name||'').trim().toLowerCase();
+  if(!n)return '';
+  const c=state.conductores.find(x=>`${x.nombre||''} ${x.apellido||''}`.trim().toLowerCase()===n);
+  return c?c.id:'';
+}
+function excelRowsFromWorkbook(wb, wanted){
+  const wantedNorm=normalizeKey(wanted);
+  const sheetName=wb.SheetNames.find(n=>normalizeKey(n).includes(wantedNorm))||wb.SheetNames[0];
+  return XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{defval:''});
+}
+window.openImportModal=function(type){
+  if(!isAdmin()&&type==='vehiculos'){showToast('Solo administradores pueden importar vehículos');return;}
+  const labels={vehiculos:'vehículos',mantenimientos:'mantenimientos',combustible:'combustible',kilometrajes:'kilometrajes'};
+  const examples={
+    vehiculos:'Columnas: Nombre, Marca, Modelo, Placa, Tipo, Año, Odómetro, Conductor',
+    mantenimientos:'Columnas: Placa o Vehículo, Tipo, Fecha, Odómetro, Costo, Próximo km, Próxima fecha, Taller, Notas',
+    combustible:'Columnas: Placa o Vehículo, Fecha, Galones, Precio/Galón, Odómetro, Estación',
+    kilometrajes:'Columnas: Placa o Vehículo, Odómetro'
+  };
+  document.getElementById('modal-container').innerHTML=`<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Importar ${labels[type]} desde Excel</div>
+    <div class="import-hint">${examples[type]}<br>Puede ser .xlsx, .xls o .csv. Para combustible, mantenimiento y kilometraje se busca el vehículo por Placa primero.</div>
+    <input id="import-file" type="file" accept=".xlsx,.xls,.csv">
+    <div class="import-result" id="import-result"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="importFromExcel('${type}')"><i class="ti ti-upload"></i> Importar</button>
+    </div>
+  </div></div>`;
+};
+window.importFromExcel=async function(type){
+  const file=document.getElementById('import-file')?.files?.[0];
+  const result=document.getElementById('import-result');
+  if(!file){alert('Selecciona un archivo Excel.');return;}
+  result.style.display='block';result.textContent='Leyendo archivo...';
+  const buffer=await file.arrayBuffer();
+  const wb=XLSX.read(buffer,{type:'array',cellDates:false});
+  const rows=excelRowsFromWorkbook(wb,type);
+  let ok=0, skipped=0, errors=[];
+  setSyncing();
+  try{
+    for(const row of rows){
+      try{
+        if(type==='vehiculos'){
+          const marca=String(pick(row,['Marca'])).trim();
+          const modelo=String(pick(row,['Modelo','Nombre'])).trim();
+          const nombre=String(pick(row,['Nombre','Vehiculo','Vehículo'])).trim() || `${marca}${modelo?' '+modelo:''}`.trim();
+          const placa=String(pick(row,['Placa','Matricula','Matrícula'])).trim();
+          if(!nombre||!placa){skipped++;continue;}
+          await addDoc(collection(db,'vehiculos'),{
+            nombre,marca,modelo,placa,
+            tipo:String(pick(row,['Tipo','Clase'])).trim()||'Van',
+            año:toNumber(pick(row,['Año','Ano','Year']))||new Date().getFullYear(),
+            odometro:toNumber(pick(row,['Odometro','Odómetro','Kilometraje','Km'])),
+            conductorId:findConductorByName(pick(row,['Conductor','Chofer'])),
+            createdAt:serverTimestamp(),creadoPor:currentUser.email
+          });
+          ok++;
+        } else if(type==='mantenimientos'){
+          const v=findVehicleByRow(row);const tipo=String(pick(row,['Tipo','Mantenimiento','Servicio'])).trim();
+          if(!v||!tipo){skipped++;continue;}
+          await addDoc(collection(db,'mantenimientos'),{
+            vehiculoId:v.id,conductorId:v.conductorId||findConductorByName(pick(row,['Conductor','Chofer'])),
+            tipo,fecha:toDateValue(pick(row,['Fecha','Date']))||new Date().toISOString().split('T')[0],
+            odometro:toNumber(pick(row,['Odometro','Odómetro','Km','Kilometraje'])),
+            costo:toNumber(pick(row,['Costo','Costo RD','Total'])),
+            proximoKm:toNumber(pick(row,['Proximo km','Próximo km','Proximo','Próximo'])),
+            fechaProxima:toDateValue(pick(row,['Proxima fecha','Próxima fecha','Fecha proxima','Fecha próxima'])),
+            taller:String(pick(row,['Taller','Proveedor'])).trim(),
+            notas:String(pick(row,['Notas','Observaciones'])).trim(),
+            createdAt:serverTimestamp(),creadoPor:currentUser.email
+          });
+          ok++;
+        } else if(type==='combustible'){
+          const v=findVehicleByRow(row);const gal=toNumber(pick(row,['Galones','Galon','Galón']));
+          if(!v||!gal){skipped++;continue;}
+          await addDoc(collection(db,'combustible'),{
+            vehiculoId:v.id,conductorId:v.conductorId||findConductorByName(pick(row,['Conductor','Chofer'])),
+            fecha:toDateValue(pick(row,['Fecha','Date']))||new Date().toISOString().split('T')[0],
+            galones:gal,precio:toNumber(pick(row,['Precio/Galón','Precio/Galon','Precio','RD$/Gal'])),
+            odometro:toNumber(pick(row,['Odometro','Odómetro','Km','Kilometraje'])),
+            estacion:String(pick(row,['Estacion','Estación','Bomba'])).trim(),
+            createdAt:serverTimestamp(),creadoPor:currentUser.email
+          });
+          ok++;
+        } else if(type==='kilometrajes'){
+          const v=findVehicleByRow(row);const od=toNumber(pick(row,['Odometro','Odómetro','Kilometraje','Km']));
+          if(!v||!od){skipped++;continue;}
+          await updateDoc(doc(db,'vehiculos',v.id),{odometro:od});
+          ok++;
+        }
+      }catch(e){errors.push(e.message);skipped++;}
+    }
+    result.textContent=`Importación finalizada.\nRegistros procesados: ${ok}\nOmitidos: ${skipped}${errors.length?'\nErrores: '+errors.slice(0,3).join(' | '):''}`;
+    showToast('Importación completada ✓');
+  }catch(e){result.textContent='Error: '+e.message;setSynced();}
+};
+
+window.requestNotificationPermission=async function(){
+  if(!('Notification' in window)){showToast('Este navegador no soporta notificaciones');return;}
+  const permission=await Notification.requestPermission();
+  showToast(permission==='granted'?'Notificaciones activadas ✓':'Permiso de notificación no concedido');
+  renderPage();
+};
+function checkMaintenanceNotifications(){
+  if(!('Notification' in window)||Notification.permission!=='granted'||!currentUser)return;
+  const todayKey=new Date().toISOString().split('T')[0];
+  getAlerts().filter(a=>a.nivel==='rojo'||a.nivel==='amarillo').slice(0,5).forEach(a=>{
+    const key=`cybernet-notified-${currentUser.uid}-${todayKey}-${a.key||a.vid}`;
+    if(localStorage.getItem(key))return;
+    localStorage.setItem(key,'1');
+    try{new Notification(`Cybernet: ${a.vehiculo}`,{body:a.msg,icon:'icon-192.png',badge:'icon-192.png',tag:a.key||a.vid});}catch(e){}
+  });
+}
 
 // ======= EXCEL =======
 function exportToExcel(type){
@@ -492,7 +641,7 @@ function exportToExcel(type){
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Conductores');
   }
   const fecha=new Date().toISOString().split('T')[0];
-  XLSX.writeFile(wb,`FlotaRD_${type}_${fecha}.xlsx`);
+  XLSX.writeFile(wb,`Cybernet_${type}_${fecha}.xlsx`);
   showToast('Exportado a Excel ✓');
 }
 window.exportToExcel=exportToExcel;
@@ -567,13 +716,13 @@ function renderDashboard(){
     // Bar chart — gasto por vehículo
     const bc=document.getElementById('chart-vehiculos');
     if(bc&&gv.length){
-      chartInstances.vehiculos=new Chart(bc,{type:'bar',data:{labels:gv.map(x=>x.label),datasets:[{label:'Combustible',data:gv.map(x=>x.comb),backgroundColor:'#185FA5',borderRadius:5},{label:'Mantenimiento',data:gv.map(x=>x.mant),backgroundColor:'#854F0B',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}},y:{stacked:true,ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
+      chartInstances.vehiculos=new Chart(bc,{type:'bar',data:{labels:gv.map(x=>x.label),datasets:[{label:'Combustible',data:gv.map(x=>x.comb),backgroundColor:'#0F766E',borderRadius:5},{label:'Mantenimiento',data:gv.map(x=>x.mant),backgroundColor:'#854F0B',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}},y:{stacked:true,ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
     }
 
     // Line chart — tendencia mensual
     const lc=document.getElementById('chart-trend');
     if(lc){
-      chartInstances.trend=new Chart(lc,{type:'line',data:{labels:monthLabels,datasets:[{label:'Combustible',data:combByMonth,borderColor:'#185FA5',backgroundColor:'rgba(24,95,165,0.12)',tension:0.4,fill:true,pointRadius:4},{label:'Mantenimiento',data:mantByMonth,borderColor:'#854F0B',backgroundColor:'rgba(133,79,11,0.08)',tension:0.4,fill:true,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{ticks:{color:textColor,font:{size:11}},grid:{color:gridColor}},y:{ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
+      chartInstances.trend=new Chart(lc,{type:'line',data:{labels:monthLabels,datasets:[{label:'Combustible',data:combByMonth,borderColor:'#0F766E',backgroundColor:'rgba(24,95,165,0.12)',tension:0.4,fill:true,pointRadius:4},{label:'Mantenimiento',data:mantByMonth,borderColor:'#854F0B',backgroundColor:'rgba(133,79,11,0.08)',tension:0.4,fill:true,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{ticks:{color:textColor,font:{size:11}},grid:{color:gridColor}},y:{ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
     }
 
     // Doughnut — tipos de mantenimiento
@@ -581,14 +730,14 @@ function renderDashboard(){
     if(dc){
       const tipos={};state.mantenimientos.forEach(m=>{tipos[m.tipo]=(tipos[m.tipo]||0)+1;});
       const tkeys=Object.keys(tipos).slice(0,6);
-      const colors=['#185FA5','#3B6D11','#854F0B','#A32D2D','#533C2C','#993556'];
+      const colors=['#0F766E','#3B6D11','#854F0B','#A32D2D','#533C2C','#993556'];
       if(tkeys.length){chartInstances.tipos=new Chart(dc,{type:'doughnut',data:{labels:tkeys,datasets:[{data:tkeys.map(k=>tipos[k]),backgroundColor:colors,borderWidth:2,borderColor:isDark?'#252523':'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:textColor,font:{size:11},boxWidth:12}}}}});}
     }
 
     // Bar chart — gasto por conductor
     const cc=document.getElementById('chart-conductores');
     if(cc&&gc.length){
-      chartInstances.conductores=new Chart(cc,{type:'bar',data:{labels:gc.map(x=>x.label),datasets:[{label:'Combustible',data:gc.map(x=>x.comb),backgroundColor:'#185FA5',borderRadius:5},{label:'Mantenimiento',data:gc.map(x=>x.mant),backgroundColor:'#3B6D11',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}},y:{stacked:true,ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
+      chartInstances.conductores=new Chart(cc,{type:'bar',data:{labels:gc.map(x=>x.label),datasets:[{label:'Combustible',data:gc.map(x=>x.comb),backgroundColor:'#0F766E',borderRadius:5},{label:'Mantenimiento',data:gc.map(x=>x.mant),backgroundColor:'#3B6D11',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:textColor,font:{size:11}}}},scales:{x:{stacked:true,ticks:{color:textColor,font:{size:10}},grid:{color:gridColor}},y:{stacked:true,ticks:{color:textColor,font:{size:10},callback:v=>'RD$'+Math.round(v/1000)+'k'},grid:{color:gridColor}}}}});
     }
   },100);
 
@@ -716,7 +865,7 @@ function renderVehiculos(){
     <div class="page-header-row">
       <div><div class="page-title">Vehículos</div><div class="page-sub">${state.vehiculos.length} unidades</div></div>
       <div class="page-actions">
-        ${isAdmin()?`<button class="btn btn-sm" onclick="exportToExcel('vehiculos')"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+        ${isAdmin()?`<button class="btn btn-sm" onclick="openImportModal('vehiculos')"><i class="ti ti-upload"></i> Importar</button><button class="btn btn-sm" onclick="openImportModal('kilometrajes')"><i class="ti ti-gauge"></i> Km</button><button class="btn btn-sm" onclick="exportToExcel('vehiculos')"><i class="ti ti-file-spreadsheet"></i> Excel</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('vehiculo')"><i class="ti ti-plus"></i> Agregar</button>`:''}
       </div>
     </div>
@@ -758,6 +907,7 @@ function renderMantenimientos(){
       <div><div class="page-title">Mantenimientos</div><div class="page-sub">${filtered.length} registros · ${fmtM(totalFiltrado)}</div></div>
       <div class="page-actions">
         <button class="btn btn-sm" onclick="exportPDF('mantenimientos')"><i class="ti ti-file-type-pdf"></i> PDF</button>
+        <button class="btn btn-sm" onclick="openImportModal('mantenimientos')"><i class="ti ti-upload"></i> Importar</button>
         <button class="btn btn-sm" onclick="exportToExcel('mantenimientos')"><i class="ti ti-file-spreadsheet"></i> Excel</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('mantenimiento')"><i class="ti ti-plus"></i> Registrar</button>
       </div>
@@ -809,6 +959,7 @@ function renderCombustible(){
       <div><div class="page-title">Combustible</div><div class="page-sub">${filtered.length} cargas · ${fmt(tG)} gal</div></div>
       <div class="page-actions">
         <button class="btn btn-sm" onclick="exportPDF('combustible')"><i class="ti ti-file-type-pdf"></i> PDF</button>
+        <button class="btn btn-sm" onclick="openImportModal('combustible')"><i class="ti ti-upload"></i> Importar</button>
         <button class="btn btn-sm" onclick="exportToExcel('combustible')"><i class="ti ti-file-spreadsheet"></i> Excel</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('combustible')"><i class="ti ti-plus"></i> Registrar</button>
       </div>
@@ -858,7 +1009,8 @@ function renderCombustible(){
 function renderAlertas(){
   const alerts=getAlerts();
   return `
-  <div class="page-header"><div class="page-title">Alertas</div><div class="page-sub">${alerts.length} alertas activas</div></div>
+  <div class="page-header"><div class="page-header-row"><div><div class="page-title">Alertas</div><div class="page-sub">${alerts.length} alertas activas</div></div>
+    <button class="btn btn-sm" onclick="requestNotificationPermission()"><i class="ti ti-bell-ringing"></i> ${('Notification' in window)&&Notification.permission==='granted'?'Notificaciones activas':'Activar notificaciones'}</button></div></div>
   ${!alerts.length?`<div class="card"><div class="empty"><i class="ti ti-circle-check" style="color:var(--green)"></i><div style="color:var(--green);font-weight:700">¡Todo al día!</div><div>No hay alertas pendientes.</div></div></div>`:
   alerts.map(a=>`<div class="alert-item">
     <div class="alert-icon ${a.nivel==='rojo'?'red':'amber'}"><i class="ti ti-${a.nivel==='rojo'?'alert-circle':'alert-triangle'}" style="color:var(--${a.nivel==='rojo'?'red':'amber'})"></i></div>
@@ -1043,6 +1195,7 @@ window.openModal=function(type,id='',preselectedVid=''){
         <div class="form-group"><label class="form-label">Costo (RD$)</label><input id="fc" type="number" placeholder="3500" min="0"></div>
         <div class="form-group"><label class="form-label">Próximo (km)</label><input id="fpk" type="number" placeholder="50000" min="0"></div>
       </div>
+      <div class="form-group"><label class="form-label">Próxima fecha de mantenimiento</label><input id="ffp" type="date"></div>
       <div class="form-group"><label class="form-label">Taller</label><input id="fta" placeholder="Nombre del taller"></div>
       <div class="form-group"><label class="form-label">Notas</label><textarea id="fno" placeholder="Observaciones..."></textarea></div>
       <div class="modal-footer">
@@ -1102,7 +1255,7 @@ window.exportPDF=function(type){
   if(type==='desempeno'){
     const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
     pdf.setFont('helvetica','bold');pdf.setFontSize(16);pdf.setTextColor(24,95,165);
-    pdf.text('FlotaRD — Desempeño por Conductor',14,15);
+    pdf.text('Cybernet — Desempeño por Conductor',14,15);
     pdf.setFontSize(10);pdf.setTextColor(100);
     pdf.text(`Generado: ${fecha}`,14,22);pdf.line(14,25,283,25);
     const rows=state.conductores.map(c=>{
@@ -1116,7 +1269,7 @@ window.exportPDF=function(type){
     });
     pdf.autoTable({startY:30,head:[['Conductor','Vehículos','Mantenimientos','Costo Mant.','Cargas','Galones','Costo Comb.','Gasto Total']],
       body:rows,styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[24,95,165],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[240,244,251]}});
-    pdf.save(`FlotaRD_desempeno_${fileDate}.pdf`);
+    pdf.save(`Cybernet_desempeno_${fileDate}.pdf`);
     showToast('PDF generado ✓');
     return;
   }
@@ -1124,7 +1277,7 @@ window.exportPDF=function(type){
   const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   pdf.setFont('helvetica','bold');
   pdf.setFontSize(16);pdf.setTextColor(24,95,165);
-  pdf.text('FlotaRD — Gestión de Flotilla',14,15);
+  pdf.text('Cybernet — Gestión de Flotilla',14,15);
   pdf.setFontSize(10);pdf.setTextColor(100);
   pdf.text(`Reporte: ${type==='mantenimientos'?'Mantenimientos':'Combustible'} · Generado: ${fecha}`,14,22);
   pdf.line(14,25,283,25);
@@ -1151,7 +1304,7 @@ window.exportPDF=function(type){
       styles:{fontSize:8,cellPadding:3},headStyles:{fillColor:[24,95,165],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[240,244,251]},
     });
   }
-  pdf.save(`FlotaRD_${type}_${fileDate}.pdf`);
+  pdf.save(`Cybernet_${type}_${fileDate}.pdf`);
   showToast('PDF generado ✓');
 };
 function getWeekRange(){const t=new Date();const s=new Date(t);s.setDate(t.getDate()-t.getDay()+(t.getDay()===0?-6:1));return{desde:s.toISOString().split('T')[0],hasta:t.toISOString().split('T')[0]};}
@@ -1320,7 +1473,7 @@ window.doSaveM=async function(){
   const t=document.getElementById('ft').value.trim();
   if(!t){alert('El tipo es requerido');return;}
   const conductorIdReg=document.getElementById('fcond-m')?document.getElementById('fcond-m').value:'';
-  const data={vehiculoId:document.getElementById('fv').value,conductorId:conductorIdReg,tipo:t,fecha:document.getElementById('ff').value,odometro:+document.getElementById('fo').value||0,costo:+document.getElementById('fc').value||0,proximoKm:+document.getElementById('fpk').value||0,taller:document.getElementById('fta').value.trim(),notas:document.getElementById('fno').value.trim(),createdAt:serverTimestamp(),creadoPor:currentUser.email};
+  const data={vehiculoId:document.getElementById('fv').value,conductorId:conductorIdReg,tipo:t,fecha:document.getElementById('ff').value,odometro:+document.getElementById('fo').value||0,costo:+document.getElementById('fc').value||0,proximoKm:+document.getElementById('fpk').value||0,fechaProxima:document.getElementById('ffp')?.value||'',taller:document.getElementById('fta').value.trim(),notas:document.getElementById('fno').value.trim(),createdAt:serverTimestamp(),creadoPor:currentUser.email};
   setSyncing();
   try{await addDoc(collection(db,'mantenimientos'),data);showToast('Mantenimiento registrado ✓');closeModal();}
   catch(e){alert('Error: '+e.message);setSynced();}
