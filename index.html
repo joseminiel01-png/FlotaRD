@@ -549,6 +549,10 @@ window.importFromExcel=async function(type){
   const buffer=await file.arrayBuffer();
   const wb=XLSX.read(buffer,{type:'array',cellDates:false});
   const rows=excelRowsFromWorkbook(wb,type);
+  const encabezados=Object.keys(rows[0]||{}).map(normalizeKey);
+  const esPlantillaKilometraje=encabezados.includes('ficha')&&encabezados.includes('kilometraje')&&encabezados.includes('fecha');
+  const tipoSeleccionado=type;
+  if(esPlantillaKilometraje)type='kilometrajes';
   let ok=0, skipped=0, errors=[];
   setSyncing();
   try{
@@ -624,7 +628,8 @@ window.importFromExcel=async function(type){
         }
       }catch(e){errors.push(e.message);skipped++;}
     }
-    result.textContent=`Importación finalizada.\nRegistros procesados: ${ok}\nOmitidos: ${skipped}${errors.length?'\nErrores: '+errors.slice(0,3).join(' | '):''}`;
+    const deteccion=tipoSeleccionado!==type?'\nTipo detectado: Kilometrajes SERVIVANS.':'';
+    result.textContent=`Importación finalizada.\nRegistros procesados: ${ok}\nOmitidos: ${skipped}${deteccion}${errors.length?'\nErrores: '+errors.slice(0,3).join(' | '):''}`;
     showToast('Importación completada ✓');
   }catch(e){result.textContent='Error: '+e.message;setSynced();}
 };

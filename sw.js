@@ -1,4 +1,4 @@
-const CACHE = 'cybernet-firebase-v2';
+const CACHE = 'cybernet-firebase-v3';
 const ASSETS = [
   '/',
   '/index.html',
