@@ -302,11 +302,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-let state = { vehiculos:[], mantenimientos:[], combustible:[], usuarios:[], conductores:[] };
+let state = { vehiculos:[], mantenimientos:[], combustible:[], kilometrajes:[], usuarios:[], conductores:[] };
 let currentPage = 'dashboard';
 let currentUser = null;
 let currentRole = null;
-let loaded = { v:false, m:false, c:false, u:false, co:false };
+let loaded = { v:false, m:false, c:false, k:false, u:false, co:false };
 let unsubscribers = [];
 let chartInstances = {};
 
@@ -430,16 +430,17 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 window.showToast=showToast;
 
 function initListeners(){
-  loaded={v:false,m:false,c:false,u:false,co:false};
+  loaded={v:false,m:false,c:false,k:false,u:false,co:false};
   const u1=onSnapshot(query(collection(db,'vehiculos'),orderBy('createdAt','asc')),snap=>{state.vehiculos=snap.docs.map(d=>({...d.data(),id:d.id}));loaded.v=true;checkLoaded();});
   const u2=onSnapshot(query(collection(db,'mantenimientos'),orderBy('fecha','desc')),snap=>{state.mantenimientos=snap.docs.map(d=>({...d.data(),id:d.id}));loaded.m=true;checkLoaded();});
   const u3=onSnapshot(query(collection(db,'combustible'),orderBy('fecha','desc')),snap=>{state.combustible=snap.docs.map(d=>({...d.data(),id:d.id}));loaded.c=true;checkLoaded();});
+  const u6=onSnapshot(query(collection(db,'kilometrajes'),orderBy('fecha','desc')),snap=>{state.kilometrajes=snap.docs.map(d=>({...d.data(),id:d.id}));loaded.k=true;checkLoaded();},()=>{state.kilometrajes=[];loaded.k=true;checkLoaded();});
   const u4=onSnapshot(collection(db,'usuarios'),snap=>{state.usuarios=snap.docs.map(d=>({...d.data(),id:d.id}));loaded.u=true;checkLoaded();});
   const u5=onSnapshot(query(collection(db,'conductores'),orderBy('apellido','asc')),snap=>{state.conductores=snap.docs.map(d=>({...d.data(),id:d.id}));loaded.co=true;checkLoaded();});
-  unsubscribers=[u1,u2,u3,u4,u5];
+  unsubscribers=[u1,u2,u3,u4,u5,u6];
 }
 
-function checkLoaded(){if(loaded.v&&loaded.m&&loaded.c&&loaded.u&&loaded.co){setSynced();renderPage();checkMaintenanceNotifications();}}
+function checkLoaded(){if(loaded.v&&loaded.m&&loaded.c&&loaded.k&&loaded.u&&loaded.co){setSynced();renderPage();checkMaintenanceNotifications();}}
 
 // ======= HELPERS =======
 const getV=(id)=>state.vehiculos.find(v=>v.id===id);
@@ -449,6 +450,8 @@ const fmt=(n)=>Math.round(n).toLocaleString('es-DO');
 const fmtM=(n)=>'RD$'+Math.round(n).toLocaleString('es-DO');
 const dAgo=(s)=>{if(!s)return'—';const d=Math.floor((new Date()-new Date(s))/86400000);return d===0?'Hoy':d===1?'Ayer':`Hace ${d} días`;};
 const isAdmin=()=>currentRole==='admin';
+const MAINTENANCE_INTERVAL_KM=5000;
+const MAINTENANCE_ALERT_KM=1000;
 
 function getAlerts(){
   const al=[];
@@ -456,11 +459,13 @@ function getAlerts(){
   const todayOnly=new Date(now.getFullYear(),now.getMonth(),now.getDate());
   state.vehiculos.forEach(v=>{
     const mv=state.mantenimientos.filter(m=>m.vehiculoId===v.id);
-    if(!mv.length){al.push({nivel:'amarillo',vehiculo:v.nombre,placa:v.placa,msg:'Sin registros de mantenimiento',vid:v.id,key:`sin-${v.id}`});return;}
+    const scheduledKm=Number(v.proximoMantenimientoKm)||0;
+    if(!mv.length&&!scheduledKm){al.push({nivel:'amarillo',vehiculo:v.nombre,placa:v.placa,msg:'Sin registros de mantenimiento',vid:v.id,key:`sin-${v.id}`});return;}
     const lm=mv[0];
-    if(lm.proximoKm&&v.odometro>=lm.proximoKm) al.push({nivel:'rojo',vehiculo:v.nombre,placa:v.placa,msg:`Mantenimiento vencido por kilometraje — ${fmt(v.odometro)} km / próx: ${fmt(lm.proximoKm)} km`,vid:v.id,key:`km-red-${v.id}-${lm.id||''}`});
-    else if(lm.proximoKm&&(lm.proximoKm-v.odometro)<=2000) al.push({nivel:'amarillo',vehiculo:v.nombre,placa:v.placa,msg:`Próximo mantenimiento en ${fmt(lm.proximoKm-v.odometro)} km`,vid:v.id,key:`km-amber-${v.id}-${lm.id||''}`});
-    if(lm.fechaProxima){
+    const proximoKm=scheduledKm||(lm&&lm.proximoKm)||0;
+    if(proximoKm&&v.odometro>=proximoKm) al.push({nivel:'rojo',vehiculo:v.nombre,placa:v.placa,msg:`Mantenimiento vencido por kilometraje — ${fmt(v.odometro)} km / próx: ${fmt(proximoKm)} km`,vid:v.id,key:`km-red-${v.id}-${proximoKm}`});
+    else if(proximoKm&&(proximoKm-v.odometro)<=MAINTENANCE_ALERT_KM) al.push({nivel:'amarillo',vehiculo:v.nombre,placa:v.placa,msg:`Próximo mantenimiento en ${fmt(proximoKm-v.odometro)} km`,vid:v.id,key:`km-amber-${v.id}-${proximoKm}`});
+    if(lm&&lm.fechaProxima){
       const due=new Date(lm.fechaProxima+'T00:00:00');
       const days=Math.ceil((due-todayOnly)/86400000);
       if(days<0) al.push({nivel:'rojo',vehiculo:v.nombre,placa:v.placa,msg:`Mantenimiento vencido desde ${lm.fechaProxima}`,vid:v.id,key:`date-red-${v.id}-${lm.id||''}`});
@@ -472,12 +477,11 @@ function getAlerts(){
 
 const vIcon=t=>t==='Van'?'ti-bus':t==='Camión'?'ti-truck':'ti-car';
 const vStatus=v=>{
-  const mv=state.mantenimientos.filter(m=>m.vehiculoId===v.id);
-  if(!mv.length)return'gray';
-  const lm=mv[0];
-  if(!lm.proximoKm)return'gray';
-  if(v.odometro>=lm.proximoKm)return'red';
-  if((lm.proximoKm-v.odometro)<=2000)return'amber';
+  const lm=state.mantenimientos.filter(m=>m.vehiculoId===v.id)[0];
+  const proximoKm=Number(v.proximoMantenimientoKm)||(lm&&Number(lm.proximoKm))||0;
+  if(!proximoKm)return'gray';
+  if(v.odometro>=proximoKm)return'red';
+  if((proximoKm-v.odometro)<=MAINTENANCE_ALERT_KM)return'amber';
   return'green';
 };
 const statusLabel={green:'Al día',amber:'Próximo',red:'Vencido',gray:'Sin datos'};
@@ -500,9 +504,10 @@ function toDateValue(v){
   return isNaN(d)?raw:d.toISOString().split('T')[0];
 }
 function findVehicleByRow(row){
+  const ficha=String(pick(row,['Ficha','Numero de ficha','No ficha','Unidad'])).trim().toLowerCase();
   const placa=String(pick(row,['Placa','Matricula','Matrícula','Plate'])).trim().toLowerCase();
   const veh=String(pick(row,['Vehiculo','Vehículo','Nombre','Unidad'])).trim().toLowerCase();
-  return state.vehiculos.find(v=>(placa&&String(v.placa||'').toLowerCase()===placa)||(veh&&String(v.nombre||'').toLowerCase()===veh));
+  return state.vehiculos.find(v=>(ficha&&String(v.ficha||'').toLowerCase()===ficha)||(placa&&String(v.placa||'').toLowerCase()===placa)||(veh&&String(v.nombre||'').toLowerCase()===veh));
 }
 function findConductorByName(name){
   const n=String(name||'').trim().toLowerCase();
@@ -522,12 +527,12 @@ window.openImportModal=function(type){
     vehiculos:'Columnas: Nombre, Marca, Modelo, Placa, Tipo, Año, Odómetro, Conductor',
     mantenimientos:'Columnas: Placa o Vehículo, Tipo, Fecha, Odómetro, Costo, Próximo km, Próxima fecha, Taller, Notas',
     combustible:'Columnas: Placa o Vehículo, Fecha, Galones, Precio/Galón, Odómetro, Estación',
-    kilometrajes:'Columnas: Placa o Vehículo, Odómetro'
+    kilometrajes:'Plantilla SERVIVANS: Ficha, Kilometraje, Fecha'
   };
   document.getElementById('modal-container').innerHTML=`<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-title">Importar ${labels[type]} desde Excel</div>
-    <div class="import-hint">${examples[type]}<br>Puede ser .xlsx, .xls o .csv. Para combustible, mantenimiento y kilometraje se busca el vehículo por Placa primero.</div>
+    <div class="import-hint">${examples[type]}<br>Puede ser .xlsx, .xls o .csv. En kilometrajes, Ficha identifica la unidad; si no existe, se crea automáticamente.</div>
     <input id="import-file" type="file" accept=".xlsx,.xls,.csv">
     <div class="import-result" id="import-result"></div>
     <div class="modal-footer">
@@ -567,17 +572,20 @@ window.importFromExcel=async function(type){
         } else if(type==='mantenimientos'){
           const v=findVehicleByRow(row);const tipo=String(pick(row,['Tipo','Mantenimiento','Servicio'])).trim();
           if(!v||!tipo){skipped++;continue;}
+          const odometro=toNumber(pick(row,['Odometro','Odómetro','Km','Kilometraje']));
+          const proximoKm=toNumber(pick(row,['Proximo km','Próximo km','Proximo','Próximo']))||(odometro+MAINTENANCE_INTERVAL_KM);
           await addDoc(collection(db,'mantenimientos'),{
             vehiculoId:v.id,conductorId:v.conductorId||findConductorByName(pick(row,['Conductor','Chofer'])),
             tipo,fecha:toDateValue(pick(row,['Fecha','Date']))||new Date().toISOString().split('T')[0],
-            odometro:toNumber(pick(row,['Odometro','Odómetro','Km','Kilometraje'])),
+            odometro,
             costo:toNumber(pick(row,['Costo','Costo RD','Total'])),
-            proximoKm:toNumber(pick(row,['Proximo km','Próximo km','Proximo','Próximo'])),
+            proximoKm,
             fechaProxima:toDateValue(pick(row,['Proxima fecha','Próxima fecha','Fecha proxima','Fecha próxima'])),
             taller:String(pick(row,['Taller','Proveedor'])).trim(),
             notas:String(pick(row,['Notas','Observaciones'])).trim(),
             createdAt:serverTimestamp(),creadoPor:currentUser.email
           });
+          await updateDoc(doc(db,'vehiculos',v.id),{odometro:Math.max(Number(v.odometro)||0,odometro),proximoMantenimientoKm:proximoKm});
           ok++;
         } else if(type==='combustible'){
           const v=findVehicleByRow(row);const gal=toNumber(pick(row,['Galones','Galon','Galón']));
@@ -592,9 +600,26 @@ window.importFromExcel=async function(type){
           });
           ok++;
         } else if(type==='kilometrajes'){
-          const v=findVehicleByRow(row);const od=toNumber(pick(row,['Odometro','Odómetro','Kilometraje','Km']));
-          if(!v||!od){skipped++;continue;}
-          await updateDoc(doc(db,'vehiculos',v.id),{odometro:od});
+          const ficha=String(pick(row,['Ficha','Numero de ficha','No ficha','Unidad'])).trim();
+          const od=toNumber(pick(row,['Kilometraje','Odometro','Odómetro','Km']));
+          const fecha=toDateValue(pick(row,['Fecha','Date']))||new Date().toISOString().split('T')[0];
+          if(!ficha||!od){skipped++;continue;}
+          let v=findVehicleByRow(row);
+          if(!v){
+            const nuevo={nombre:`Ficha ${ficha}`,marca:'',modelo:'',placa:'',ficha,tipo:'Van',año:new Date().getFullYear(),odometro:od,fechaUltimoKilometraje:fecha,proximoMantenimientoKm:od+MAINTENANCE_INTERVAL_KM,createdAt:serverTimestamp(),creadoPor:currentUser.email};
+            const ref=await addDoc(collection(db,'vehiculos'),nuevo);
+            v={...nuevo,id:ref.id};
+            state.vehiculos.push(v);
+          }else{
+            const odometroActual=Math.max(Number(v.odometro)||0,od);
+            const update={odometro:odometroActual,fechaUltimoKilometraje:fecha};
+            if(!v.ficha)update.ficha=ficha;
+            if(!Number(v.proximoMantenimientoKm))update.proximoMantenimientoKm=odometroActual+MAINTENANCE_INTERVAL_KM;
+            await updateDoc(doc(db,'vehiculos',v.id),update);
+            Object.assign(v,update);
+          }
+          const lecturaId=`km-${normalizeKey(ficha)}-${fecha}-${od}`;
+          await setDoc(doc(db,'kilometrajes',lecturaId),{vehiculoId:v.id,ficha,kilometraje:od,fecha,createdAt:serverTimestamp(),creadoPor:currentUser.email});
           ok++;
         }
       }catch(e){errors.push(e.message);skipped++;}
@@ -633,7 +658,7 @@ function exportToExcel(type){
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Combustible');
   }
   if(type==='vehiculos'||type==='all'){
-    const data=state.vehiculos.map(v=>({Nombre:v.nombre,Placa:v.placa,Tipo:v.tipo,Año:v.año,'Odómetro':v.odometro,Conductor:v.conductorId?conductorNombre(v.conductorId):'—',Mantenimientos:state.mantenimientos.filter(m=>m.vehiculoId===v.id).length,Cargas:state.combustible.filter(c=>c.vehiculoId===v.id).length}));
+    const data=state.vehiculos.map(v=>({Ficha:v.ficha||'',Nombre:v.nombre,Placa:v.placa,Tipo:v.tipo,Año:v.año,'Odómetro':v.odometro,'Fecha último kilometraje':v.fechaUltimoKilometraje||'', 'Próximo mantenimiento (km)':v.proximoMantenimientoKm||'',Conductor:v.conductorId?conductorNombre(v.conductorId):'—',Mantenimientos:state.mantenimientos.filter(m=>m.vehiculoId===v.id).length,Cargas:state.combustible.filter(c=>c.vehiculoId===v.id).length}));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'Vehículos');
   }
   if(type==='conductores'||type==='all'){
@@ -1186,14 +1211,14 @@ window.openModal=function(type,id='',preselectedVid=''){
       <div class="modal-title">Registrar mantenimiento</div>
       <div class="form-group"><label class="form-label">Vehículo</label><select id="fv" onchange="autoFillConductor('fv','fcond-m')">${vOpts}</select></div>
       <div class="form-group"><label class="form-label"><i class="ti ti-id-badge"></i> Conductor al momento del registro</label><select id="fcond-m">${cOptsMant}</select></div>
-      <div class="form-group"><label class="form-label">Tipo de mantenimiento</label><input id="ft" placeholder="Cambio de aceite, Frenos, etc."></div>
+        <div class="form-group"><label class="form-label">Tipo de mantenimiento</label><input id="ft" placeholder="Cambio de aceite, Frenos, etc."></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Fecha</label><input id="ff" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
         <div class="form-group"><label class="form-label">Odómetro (km)</label><input id="fo" type="number" placeholder="45000" min="0"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Costo (RD$)</label><input id="fc" type="number" placeholder="3500" min="0"></div>
-        <div class="form-group"><label class="form-label">Próximo (km)</label><input id="fpk" type="number" placeholder="50000" min="0"></div>
+        <div class="form-group"><label class="form-label">Próximo (km)</label><input id="fpk" type="number" value="${firstV?(Number(firstV.odometro||0)+MAINTENANCE_INTERVAL_KM):''}" placeholder="50000" min="0"></div>
       </div>
       <div class="form-group"><label class="form-label">Próxima fecha de mantenimiento</label><input id="ffp" type="date"></div>
       <div class="form-group"><label class="form-label">Taller</label><input id="fta" placeholder="Nombre del taller"></div>
@@ -1473,9 +1498,13 @@ window.doSaveM=async function(){
   const t=document.getElementById('ft').value.trim();
   if(!t){alert('El tipo es requerido');return;}
   const conductorIdReg=document.getElementById('fcond-m')?document.getElementById('fcond-m').value:'';
-  const data={vehiculoId:document.getElementById('fv').value,conductorId:conductorIdReg,tipo:t,fecha:document.getElementById('ff').value,odometro:+document.getElementById('fo').value||0,costo:+document.getElementById('fc').value||0,proximoKm:+document.getElementById('fpk').value||0,fechaProxima:document.getElementById('ffp')?.value||'',taller:document.getElementById('fta').value.trim(),notas:document.getElementById('fno').value.trim(),createdAt:serverTimestamp(),creadoPor:currentUser.email};
+  const vehiculoId=document.getElementById('fv').value;
+  const v=getV(vehiculoId);
+  const odometro=+document.getElementById('fo').value||Number(v?.odometro)||0;
+  const proximoKm=+document.getElementById('fpk').value||odometro+MAINTENANCE_INTERVAL_KM;
+  const data={vehiculoId,conductorId:conductorIdReg,tipo:t,fecha:document.getElementById('ff').value,odometro,costo:+document.getElementById('fc').value||0,proximoKm,fechaProxima:document.getElementById('ffp')?.value||'',taller:document.getElementById('fta').value.trim(),notas:document.getElementById('fno').value.trim(),createdAt:serverTimestamp(),creadoPor:currentUser.email};
   setSyncing();
-  try{await addDoc(collection(db,'mantenimientos'),data);showToast('Mantenimiento registrado ✓');closeModal();}
+  try{await addDoc(collection(db,'mantenimientos'),data);await updateDoc(doc(db,'vehiculos',vehiculoId),{odometro:Math.max(Number(v?.odometro)||0,odometro),proximoMantenimientoKm:proximoKm});showToast('Mantenimiento registrado ✓');closeModal();}
   catch(e){alert('Error: '+e.message);setSynced();}
 };
 
